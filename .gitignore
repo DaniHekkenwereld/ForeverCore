@@ -1,0 +1,11 @@
+# Local tooling
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+*.tmp
+
+# World of Warcraft runtime state
+WTF/
+Cache/
