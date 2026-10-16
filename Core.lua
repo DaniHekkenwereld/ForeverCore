@@ -1,0 +1,331 @@
+-- ForeverCore 0.1.0 (WoW: Forever Beta / Camelot)
+-- Display and convenience only. Does not automate spells or bypass protected APIs.
+
+local FC = CreateFrame("Frame")
+local prefix = "|cff80c9ffForeverCore|r "
+local defaults = {
+    plateMode = "auto",       -- auto: friendly plates only inside raid instances
+    profile = "tank",         -- manual: 'tank' or 'fury'; Forever has no standard Retail spec API
+    checkFlask = true,
+    checkFood = true,
+    checkShout = true,
+    showOutsideRaid = false,
+    x = 0,
+    y = -195,
+}
+local db
+local inRaid = false
+local pendingPlateSync = false
+local lastPlates = nil
+local lastResult = {}
+local combat = false
+
+local function say(msg)
+    if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage(prefix .. tostring(msg)) end
+end
+local function readable(value)
+    if type(issecretvalue) == "function" then
+        local ok, secret = pcall(issecretvalue, value)
+        if not ok or secret then return false end
+    end
+    if type(canaccessvalue) == "function" then
+        local ok, accessible = pcall(canaccessvalue, value)
+        if ok and not accessible then return false end
+    end
+    return true
+end
+local function raidInstance()
+    local ok, inside, kind = pcall(IsInInstance)
+    return ok and inside and kind == "raid"
+end
+local function getCVarValue(key)
+    local getter = (C_CVar and C_CVar.GetCVar) or GetCVar
+    if not getter then return nil end
+    local ok, result = pcall(getter, key)
+    if ok and readable(result) then return result end
+    return nil
+end
+local function setCVarValue(key, value)
+    local setter = (C_CVar and C_CVar.SetCVar) or SetCVar
+    if not setter then return false end
+    local ok = pcall(setter, key, value)
+    return ok and getCVarValue(key) == value
+end
+local function syncPlates()
+    if not db then return end
+    if InCombatLockdown and InCombatLockdown() then
+        pendingPlateSync = true
+        return
+    end
+    local desired = db.plateMode == "on" or (db.plateMode == "auto" and inRaid)
+    local value = desired and "1" or "0"
+    if lastPlates ~= value or getCVarValue("nameplateShowFriends") ~= value then
+        if not setCVarValue("nameplateShowFriends", value) then
+            say("Nameplate-CVar wordt niet toegepast. Probeer Shift+V in-game; Forever beta kan writes weigeren.")
+        end
+        lastPlates = value
+    end
+    pendingPlateSync = false
+end
+
+local frame = CreateFrame("Frame", "ForeverCorePrepull", UIParent, "BackdropTemplate")
+frame:SetSize(438, 100)
+frame:SetPoint("CENTER", UIParent, "CENTER", 0, -195)
+frame:SetFrameStrata("MEDIUM")
+if frame.SetBackdrop then
+    frame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    frame:SetBackdropColor(0.025, 0.035, 0.05, 0.88)
+    frame:SetBackdropBorderColor(0.24, 0.36, 0.48, 0.85)
+end
+local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+title:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, -10)
+title:SetText("FOREVERCORE  ·  PRE-PULL")
+local status = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+status:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -12)
+status:SetWidth(405)
+status:SetJustifyH("LEFT")
+local footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+footer:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 11)
+footer:SetText("/fc  |  /fc move  |  /fc macros")
+frame:Hide()
+
+local function hasAuras()
+    -- Aura values can become 'secret' in combat on Forever. Deliberately scan only OOC.
+    local found = {flask = false, food = false, shout = false}
+    if InCombatLockdown and InCombatLockdown() then return nil end
+    if not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then return nil end
+    local shoutName = "battle shout"
+    if C_Spell and C_Spell.GetSpellInfo then
+        local ok, spell = pcall(C_Spell.GetSpellInfo, 6673)
+        if ok and type(spell) == "table" and readable(spell.name) and type(spell.name) == "string" then
+            shoutName = string.lower(spell.name)
+        end
+    end
+    for i = 1, 60 do
+        local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not ok then return nil end
+        if not aura then break end
+        if type(aura) == "table" and readable(aura.name) and type(aura.name) == "string" then
+            local name = string.lower(aura.name)
+            if name:find("flask", 1, true) or name:find("flacon", 1, true) then found.flask = true end
+            if name:find("well fed", 1, true) or name:find("goed gevoed", 1, true) then found.food = true end
+            if name == shoutName then found.shout = true end
+        end
+    end
+    return found
+end
+local function shieldEquipped()
+    if not (GetInventoryItemID and C_Item and C_Item.GetItemInfoInstant) then return nil end
+    local itemID = GetInventoryItemID("player", 17)
+    if not itemID then return false end
+    local ok, _, _, _, equipLoc = pcall(C_Item.GetItemInfoInstant, itemID)
+    if not ok or not readable(equipLoc) then return nil end
+    return equipLoc == "INVTYPE_SHIELD"
+end
+local function showFrame()
+    return inRaid or db.showOutsideRaid
+end
+local function refresh()
+    if not db then return end
+    inRaid = raidInstance()
+    if not showFrame() then frame:Hide(); return end
+    frame:Show()
+    title:SetText("FOREVERCORE  ·  " .. string.upper(db.profile) .. "  ·  PRE-PULL")
+    if InCombatLockdown and InCombatLockdown() then
+        combat = true
+        status:SetText("|cff98a5b5In combat: buffcheck gepauzeerd|r")
+        return
+    end
+    combat = false
+    local aura = hasAuras()
+    local missing = {}
+    local level = (UnitLevel and UnitLevel("player")) or 60
+    if not readable(level) or type(level) ~= "number" then level = 60 end
+    if aura == nil then
+        status:SetText("|cffffbd69Buffs niet uitleesbaar in deze beta-build|r")
+        return
+    end
+    if db.checkFlask and level >= 50 and not aura.flask then missing[#missing + 1] = "FLASK" end
+    if db.checkFood and level >= 15 and not aura.food then missing[#missing + 1] = "FOOD" end
+    if UnitClass and select(2, UnitClass("player")) == "WARRIOR" then
+        if db.checkShout and not aura.shout then missing[#missing + 1] = "BATTLE SHOUT" end
+        if db.profile == "tank" then
+            local shield = shieldEquipped()
+            if shield == false then missing[#missing + 1] = "SHIELD" end
+            if GetShapeshiftForm then
+                local form = GetShapeshiftForm()
+                if readable(form) and type(form) == "number" and form ~= 2 then
+                    missing[#missing + 1] = "DEFENSIVE STANCE"
+                end
+            end
+        end
+    end
+    lastResult = missing
+    if #missing > 0 then
+        status:SetText("|cffff5656MISSING: " .. table.concat(missing, "  ·  ") .. "|r")
+    else
+        status:SetText("|cff62e6a4READY  ·  Flask / food / class checks OK|r")
+    end
+end
+local function position()
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER", UIParent, "CENTER", db.x, db.y)
+end
+local function moveFrame()
+    if InCombatLockdown and InCombatLockdown() then say("Verplaatsen kan alleen buiten combat."); return end
+    frame:Show()
+    frame:EnableMouse(true)
+    frame:SetMovable(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local x, y = self:GetCenter()
+        local ux, uy = UIParent:GetCenter()
+        if x and y and ux and uy then db.x, db.y = math.floor(x - ux), math.floor(y - uy) end
+        position()
+        self:EnableMouse(false)
+        self:SetScript("OnDragStart", nil)
+        self:SetScript("OnDragStop", nil)
+        say("Positie opgeslagen. Let op: SavedVariables zijn in sommige beta-builds defect.")
+    end)
+    say("Sleep het paneel met de linkermuisknop. Loslaten bewaart de positie.")
+end
+
+-- Each entry is a regular WoW macro. A user keypress is always required.
+local macros = {
+    {"FC-Sunder", "#showtooltip Sunder Armor\n/startattack [harm]\n/cast [harm] Sunder Armor"},
+    {"FC-Revenge", "#showtooltip Revenge\n/startattack [harm]\n/cast [harm] Revenge"},
+    {"FC-Taunt", "#showtooltip Taunt\n/cast [@mouseover,harm,nodead][harm] Taunt"},
+    {"FC-ShBlock", "#showtooltip Shield Block\n/cast [stance:2] Shield Block; Defensive Stance"},
+    {"FC-ShWall", "#showtooltip Shield Wall\n/cast [stance:2] Shield Wall; Defensive Stance"},
+    {"FC-Reck", "#showtooltip Recklessness\n/cast [stance:3] Recklessness; Berserker Stance"},
+    {"FC-Retal", "#showtooltip Retaliation\n/cast [stance:1] Retaliation; Battle Stance"},
+    {"FC-3CDs", "#showtooltip [stance:1] Retaliation; [stance:2] Shield Wall; [stance:3] Recklessness\n/cast [stance:1] Retaliation; [stance:2] Shield Wall; [stance:3] Recklessness"},
+    {"FC-BT", "#showtooltip Bloodthirst\n/startattack [harm]\n/cast [harm] Bloodthirst"},
+    {"FC-WW", "#showtooltip Whirlwind\n/cast [stance:3] Whirlwind; Berserker Stance"},
+    {"FC-Execute", "#showtooltip Execute\n/startattack [harm]\n/cast [harm] Execute"},
+    {"FC-Pummel", "#showtooltip\n/cast [stance:3] Pummel; [stance:1/2] Shield Bash"},
+    -- Combo macros: normal press = Reck, Shift = Retal, Ctrl = Shield Wall.
+    -- Manual modifier progression, intentionally not automatic combat decisions.
+    {"FC-ReckRet", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [stance:3] Recklessness; Berserker Stance"},
+    {"FC-ReckWall", "#showtooltip\n/cast [mod:shift,stance:2] Shield Wall; [mod:shift] Defensive Stance; [stance:3] Recklessness; Berserker Stance"},
+    {"FC-All3", "#showtooltip\n/cast [mod:ctrl,stance:2] Shield Wall; [mod:ctrl] Defensive Stance; [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [stance:3] Recklessness; Berserker Stance"},
+}
+local function macroExists(name)
+    if GetMacroIndexByName then
+        local ok, index = pcall(GetMacroIndexByName, name)
+        return ok and type(index) == "number" and index > 0
+    end
+    return false
+end
+local function installMacros()
+    if InCombatLockdown and InCombatLockdown() then
+        say("Macro's aanmaken kan alleen buiten combat.")
+        return
+    end
+    if UnitClass and select(2, UnitClass("player")) ~= "WARRIOR" then
+        say("Deze macroset is alleen bedoeld voor Warriors.")
+        return
+    end
+    if not CreateMacro then say("CreateMacro-API ontbreekt in deze build."); return end
+    local created, skipped, failed = 0, 0, 0
+    for _, entry in ipairs(macros) do
+        local name, body = entry[1], entry[2]
+        if macroExists(name) then
+            skipped = skipped + 1
+        elseif #body > 255 then
+            failed = failed + 1
+            say(name .. " over 255 karakters; overgeslagen.")
+        else
+            local ok, index = pcall(CreateMacro, name, "INV_MISC_QUESTIONMARK", body, true)
+            if ok and type(index) == "number" and index > 0 then
+                created = created + 1
+            else
+                failed = failed + 1
+                say("Kon " .. name .. " niet toevoegen (mogelijk macro-limiet).")
+            end
+        end
+    end
+    say(string.format("Macro's: %d nieuw, %d bestonden al, %d mislukt. Open /macro en sleep ze naar je bars.", created, skipped, failed))
+    say("Combo's: FC-ReckRet = normaal Reck, Shift Retal; FC-ReckWall = normaal Reck, Shift Wall; FC-All3 = normaal Reck, Shift Retal, Ctrl Wall. Wisselen van stance kan een extra druk vereisen.")
+end
+local function switch(v)
+    if v == "on" then return true elseif v == "off" then return false end
+    return nil
+end
+local function handle(line)
+    if not db then return end
+    local arg, val = line:lower():match("^%s*(%S*)%s*(%S*)")
+    if arg == "" or arg == "help" then
+        say("/fc check | /fc move | /fc macros | /fc plates auto/on/off | /fc mode tank/fury")
+        say("/fc flask on/off | /fc food on/off | /fc shout on/off | /fc show on/off")
+    elseif arg == "check" then
+        refresh()
+        say("Pre-pull controle uitgevoerd (alleen buiten combat, vereist beschikbare aura-API).")
+    elseif arg == "move" then
+        moveFrame()
+    elseif arg == "macros" then
+        installMacros()
+    elseif arg == "plates" and (val == "auto" or val == "on" or val == "off") then
+        db.plateMode = val
+        lastPlates = nil
+        syncPlates()
+        say("Friendly nameplates: " .. val)
+    elseif arg == "mode" and (val == "tank" or val == "fury") then
+        db.profile = val
+        refresh()
+        say("Warrior-profiel: " .. val .. " (handmatig; geen automatische talentscan).")
+    elseif (arg == "flask" or arg == "food" or arg == "shout" or arg == "show") and switch(val) ~= nil then
+        local key = ({flask = "checkFlask", food = "checkFood", shout = "checkShout", show = "showOutsideRaid"})[arg]
+        db[key] = switch(val)
+        refresh()
+        say(arg .. " = " .. val)
+    else
+        say("Onbekende opdracht. Typ /fc help.")
+    end
+end
+SLASH_FOREVERCORE1 = "/fc"
+SLASH_FOREVERCORE2 = "/forevercore"
+SlashCmdList.FOREVERCORE = handle
+
+FC:RegisterEvent("ADDON_LOADED")
+FC:RegisterEvent("PLAYER_ENTERING_WORLD")
+FC:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+FC:RegisterEvent("GROUP_ROSTER_UPDATE")
+FC:RegisterEvent("PLAYER_REGEN_DISABLED")
+FC:RegisterEvent("PLAYER_REGEN_ENABLED")
+FC:RegisterEvent("UNIT_AURA")
+FC:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+FC:SetScript("OnEvent", function(_, event, ...)
+    if event == "ADDON_LOADED" then
+        if (...) ~= "ForeverCore" then return end
+        if type(ForeverCoreDB) ~= "table" then ForeverCoreDB = {} end
+        db = ForeverCoreDB
+        for k, v in pairs(defaults) do
+            if db[k] == nil then db[k] = v end
+        end
+        position()
+        say("v0.1 geladen. /fc help voor opdrachten. /fc macros maakt Warrior-macro's aan.")
+    elseif not db then
+        return
+    elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" or event == "GROUP_ROSTER_UPDATE" then
+        inRaid = raidInstance()
+        syncPlates()
+        refresh()
+    elseif event == "PLAYER_REGEN_DISABLED" then
+        refresh()
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if pendingPlateSync then syncPlates() end
+        refresh()
+    elseif event == "UNIT_AURA" then
+        local unit = ...
+        if unit == "player" and not (InCombatLockdown and InCombatLockdown()) then refresh() end
+    elseif event == "UPDATE_SHAPESHIFT_FORM" then
+        if not (InCombatLockdown and InCombatLockdown()) then refresh() end
+    end
+end)
