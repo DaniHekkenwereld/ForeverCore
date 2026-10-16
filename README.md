@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.2.0-beta
+## Included in v0.2.1-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -12,7 +12,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 - Manually switch between tank, Fury, and Arms profiles.
 - Raid debuff display: **Sunder Armor** stacks (up to 5), **Demoralizing Shout**, **Thunder Clap** on your hostile target. If combat auras are secret, status is unknown (`?`), never falsely marked missing.
 - **Taunt feedback:** warns on a spellcast failure event if the client supplies it and reminds you to verify the boss target when you cast Taunt; **resist/miss cannot be proven** without the combat log.
-- Separate drag-and-edit opener macro panel with **4 per spec**, **12 total** (ST threat, AoE threat, ST DPS, AoE DPS), created only when dragged so existing macro slots are not consumed unnecessarily.
+- Separate drag-and-edit burst opener macro panel with **4 per spec**, **12 total** (ST threat, AoE threat, ST DPS, AoE DPS), created only when dragged so existing macro slots are not consumed unnecessarily.
 - Generate 15 character-specific Warrior macros without overwriting existing ones. Combo macros are **manual**, with modifier keys for each cooldown.
 
 ## Installation
@@ -61,32 +61,32 @@ To use new macros, open `/macro` and drag them to your action bars.
 
 **Important:** Stance changes may require a second button press. Shield Wall requires a shield. These macros must be tested against the current Forever beta class design; none casts multiple combat cooldowns automatically.
 
-## Draggable opener macros (v0.2)
+## Draggable burst opener macros (v0.2.1 beta)
 
-Open `/fc openers`. Select **Protection / Fury / Arms**, then choose any of the 4 rows:
+Use `/fc openers` for **12 editable, draggable burst openers**: ST threat, AoE threat, ST DPS and AoE DPS for Protection, Fury and Arms. These are now **cooldown-combination openers**, NOT a claim that one attack button is the full opener.
 
-- **ST threat**: practical high-threat buttons for a single enemy.
-- **AoE threat**: Thunder Clap as the main multi-target tool, with Demo Shout and Cleave on modifiers.
-- **ST DPS**: primary spec attack, with procs/Execute/Rend on modifiers where relevant.
-- **AoE DPS**: appropriate AoE attacks and manual rage dumps.
+**Important:** A WoW macro cannot automatically progress through every cooldown and stance based on combat state. The opener macros require deliberate modifier presses, and stance changes may take an additional press. Do not spam modifiers blindly. In the addon, left-click/drag to pick up the macro and drop it on an action bar; right-click or Edit to customize it (255-character limit). `/macro` also works.
 
-**Left-click or drag** a row's `Drag: opener` button to pick up the macro on your cursor, then drop it on an action bar. **Right-click** the same button or choose **Edit** to change its exact text inside ForeverCore (up to 255 characters). Existing macros are never automatically overwritten when you drag them again. Edits saved in the ForeverCore editor update the existing macro, if present. You can alternatively use `/macro`.
+### All-in threat setup
 
-The first time you drag each opener, ForeverCore creates a macro. It tries a character-specific macro slot first and an account-wide slot if the character-specific limit has been reached. The original 15 macros from `/fc macros` are unchanged. Opener names use `FC-P-*` (Prot), `FC-F-*` (Fury), or `FC-A-*` (Arms). It never deletes your macros.
+For **Protection and Arms ST threat**, use Shift = **Retaliation** (Battle Stance), Ctrl = **Recklessness** (Berserker Stance), Alt = **Bloodrage**, and normal = return to **Defensive Stance** and use Shield Slam (Protection) or Mortal Strike (Arms). The AoE versions instead finish on **Thunder Clap**. Arms AoE has Alt = **Sweeping Strikes**, not Bloodrage.
 
-### Opener logic
+For **Fury ST / AoE threat**, use Alt = **Death Wish**, Shift = Retaliation, Ctrl = Recklessness, and normal = Defensive Stance + **Bloodthirst** (ST) or **Thunder Clap** (AoE). **Death Wish is Fury-talented**, so it is not added to other specs by default.
 
-The pane describes the *recommended manual opening order* above every macro. The normal press uses the primary ability, and **Shift / Ctrl / Alt** choose secondary abilities where specified. It deliberately does **not** use `/castsequence` for procs such as Revenge or dynamic priorities, because a failed proc/cooldown/rage check would stall a sequence. A WoW macro cannot choose a mathematically optimal attack in combat. Keep stances, talent choices, rage and situation in mind. Arms and Fury threat variants are emergency tank openers, not replacements for a Protection build.
+Retaliation only counterattacks if targets attack you **from the front**. Using it without incoming melee attacks generates no retaliation hits. Recklessness boosts crit for 15 seconds but increases damage taken; Death Wish also increases damage taken. These all-in setups are risky on progression bosses and are **not proven highest-TPS builds**. They should be validated against beta logs and encounter mechanics before raid use. Defensive Stance has a threat multiplier in Forever; the default part of threat openers returns to it. **Shield Wall is a survival cooldown, not a threat-generating opener**.
 
-Examples of beta-era priorities to evaluate in raids:
+### DPS burst
 
-| Spec | ST threat | AoE threat | ST DPS | AoE DPS |
-| --- | --- | --- | --- | --- |
-| Protection | Shield Slam > Revenge proc > Sunder | Thunder Clap > tab Revenge/Shield Slam > Cleave (spare rage) | Shield Slam > Revenge | Thunder Clap > Cleave (spare rage) |
-| Fury | Defensive Stance, Bloodthirst > Revenge proc > Sunder | Defensive Stance, Thunder Clap > tab Sunder/Revenge | Bloodthirst > Whirlwind > rage dump | Whirlwind > Cleave (spare rage) |
-| Arms | Defensive Stance, Mortal Strike > Revenge proc > Sunder | Defensive Stance, Thunder Clap > tab Sunder/Revenge | Mortal Strike > Rend / Overpower proc | Sweeping Strikes > Cleave / Mortal Strike |
+- **Protection ST/AoE:** Ctrl Recklessness, Alt Bloodrage, then Shield Slam / Thunder Clap. AoE also offers Shift Retaliation only if you're the one tanking.
+- **Fury ST/AoE:** Alt Death Wish, Ctrl Recklessness, then Bloodthirst / Whirlwind in Berserker Stance. Shift is a manual Heroic Strike / Cleave rage dump.
+- **Arms ST:** Ctrl Recklessness, Alt Bloodrage, then Mortal Strike (Shift = Overpower if proc available).
+- **Arms AoE:** Alt Sweeping Strikes in Battle Stance, Ctrl Recklessness in Berserker Stance, then Whirlwind (Shift = Cleave).
 
-Check the associated talents and stance requirements. This table is a **prototype for testing**, not a measured max-TPS or max-DPS ranking: encounters, beta tuning and procs change the best opener.
+### Updating macros created with v0.2.0
+
+Previously created `FC-P-*`, `FC-F-*`, or `FC-A-*` macros **are not automatically overwritten**, to preserve user changes. To replace their ability-only text with the new burst template, use `/fc openers`, select a row, then **Edit > Default > Save**. On first drag, macros that do not yet exist use the latest burst template.
+
+The original 15 `/fc macros` shortcuts remain unchanged. Opener macros occupy character-specific or account macro slots as available. No automatic rotation or prohibited combat API access is used.
 
 ## Raid debuffs and Taunt
 
@@ -107,7 +107,7 @@ With `/fc taunt on`, a `UNIT_SPELLCAST_FAILED` event for your own Taunt shows **
 
 ## Roadmap
 
-1. In-game API smoke test of v0.2, including buttons, combat restrictions and event payloads.
+1. In-game API smoke test of v0.2.1, including buttons, combat restrictions and event payloads.
 2. Validate boss debuff visibility and Taunt event coverage; keep unreadable combat information explicitly unknown.
 3. Better pre-pull aura detection, including Forever-specific buffs.
 4. Protection/Fury/Arms HUD for cooldowns, rage and defensive readiness, subject to beta API limits.
