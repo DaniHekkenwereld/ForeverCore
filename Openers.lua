@@ -1,37 +1,25 @@
--- ForeverCore 0.2: Warrior opener library (12 user-editable, draggable macros).
+-- ForeverCore 0.2.1: burst opener library (12 user-editable, draggable macros).
 -- A macro casts only what the player explicitly chooses; no automatic combat rotation.
 local FC = _G.ForeverCore
 if not FC then return end
 local defs = {
   prot = {
-    {"STT","ST threat","Defensive Charge (Vanguard) > Shield Slam > Revenge proc > Sunder. Shift Revenge, Ctrl Sunder, Alt Shield Block.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Revenge; [mod:ctrl] Sunder Armor; [mod:alt] Shield Block; Shield Slam"},
-    {"AOT","AoE threat","Defensive Stance > Bloodrage > Thunder Clap > tab Revenge or Shield Slam. Shift Demo Shout; Ctrl Cleave with excess rage.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Demoralizing Shout; [mod:ctrl] Cleave; Thunder Clap"},
-    {"STD","ST DPS","Shield Slam, Revenge on procs, Execute when usable. Shift Revenge; Ctrl Execute.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Revenge; [mod:ctrl] Execute; Shield Slam"},
-    {"AOD","AoE DPS","Thunder Clap on cooldown; Cleave as rage dump, Revenge on procs. Shift Cleave; Ctrl Revenge.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Cleave; [mod:ctrl] Revenge; Thunder Clap"}
+    {"STT", "ST threat", "ALL-IN: Shift Retaliation (front hits) -> Ctrl Recklessness -> Alt Bloodrage -> normaal Defensive + Shield Slam.", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Bloodrage; [stance:2] Shield Slam; Defensive Stance"},
+    {"AOT", "AoE threat", "ALL-IN: Shift Retaliation (front hits) -> Ctrl Recklessness -> Alt Bloodrage -> normaal Defensive + Thunder Clap.", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Bloodrage; [stance:2] Thunder Clap; Defensive Stance"},
+    {"STD", "ST DPS", "BURST: Ctrl Recklessness -> Alt Bloodrage -> normaal Defensive + Shield Slam. Shift Revenge bij proc.", "#showtooltip\n/cast [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Bloodrage; [mod:shift,stance:2] Revenge; [mod:shift] Defensive Stance; [stance:2] Shield Slam; Defensive Stance"},
+    {"AOD", "AoE DPS", "BURST als jij tankt: Shift Retaliation -> Ctrl Recklessness -> Alt Bloodrage -> normaal Defensive + Thunder Clap.", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Bloodrage; [stance:2] Thunder Clap; Defensive Stance"}
   },
   fury = {
-    {"STT","ST threat","Emergency tank: Defensive Stance > Bloodthirst > Revenge proc > Sunder. Shift Revenge; Ctrl Sunder.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Revenge; [mod:ctrl] Sunder Armor; Bloodthirst"},
-    {"AOT","AoE threat","Emergency tank: Defensive Stance > Thunder Clap > tab-target; Demo for mitigation. Shift Demo; Ctrl Cleave.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Demoralizing Shout; [mod:ctrl] Cleave; Thunder Clap"},
-    {"STD","ST DPS","Charge > Bloodrage > Death Wish at planned burst > Bloodthirst > Whirlwind. Shift WW, Ctrl Execute.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Whirlwind; [mod:ctrl] Execute; Bloodthirst"},
-    {"AOD","AoE DPS","Whirlwind in Berserker Stance > Cleave as rage dump > Bloodthirst on priority target. Shift Cleave, Ctrl BT.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Cleave; [mod:ctrl] Bloodthirst; Whirlwind"}
+    {"STT", "ST threat", "ALL-IN off-tank: Alt Death Wish -> Shift Retaliation (front hits) -> Ctrl Recklessness -> normaal Defensive + Bloodthirst.", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Death Wish; [stance:2] Bloodthirst; Defensive Stance"},
+    {"AOT", "AoE threat", "ALL-IN pack: Alt Death Wish -> Shift Retaliation (front hits) -> Ctrl Recklessness -> normaal Defensive + Thunder Clap.", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Death Wish; [stance:2] Thunder Clap; Defensive Stance"},
+    {"STD", "ST DPS", "BURST: Alt Death Wish -> Ctrl Recklessness -> normaal Berserker + Bloodthirst. Shift Heroic Strike bij rage-overflow.", "#showtooltip\n/cast [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Death Wish; [mod:shift] Heroic Strike; [stance:3] Bloodthirst; Berserker Stance"},
+    {"AOD", "AoE DPS", "BURST: Alt Death Wish -> Ctrl Recklessness -> normaal Berserker + Whirlwind. Shift Cleave bij rage-overflow.", "#showtooltip\n/cast [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Death Wish; [mod:shift] Cleave; [stance:3] Whirlwind; Berserker Stance"}
   },
   arms = {
-    {"STT","ST threat","Emergency tank: Defensive Stance > Mortal Strike > Revenge proc > Sunder. Shift Revenge; Ctrl Sunder.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Revenge; [mod:ctrl] Sunder Armor; Mortal Strike"},
-    {"AOT","AoE threat","Emergency tank: Defensive Stance > Thunder Clap > tab-target Sunder/Revenge. Shift Demo, Ctrl Cleave.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Demoralizing Shout; [mod:ctrl] Cleave; Thunder Clap"},
-    {"STD","ST DPS","Charge > Mortal Strike; Rend when fight is long; Overpower on proc. Shift Rend; Ctrl Overpower.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Rend; [mod:ctrl] Overpower; Mortal Strike"},
-    {"AOD","AoE DPS","Charge > Sweeping Strikes (talent/Battle Stance), then Cleave or Mortal Strike. Shift Cleave; Ctrl MS.",
-      "#showtooltip\n/startattack [harm]\n/cast [mod:shift] Cleave; [mod:ctrl] Mortal Strike; Sweeping Strikes"}
+    {"STT", "ST threat", "ALL-IN off-tank: Shift Retaliation -> Ctrl Recklessness -> Alt Bloodrage -> normaal Defensive + Mortal Strike.", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Bloodrage; [stance:2] Mortal Strike; Defensive Stance"},
+    {"AOT", "AoE threat", "ALL-IN pack: Alt Sweeping Strikes -> Shift Retaliation -> Ctrl Recklessness -> normaal Defensive + Thunder Clap.", "#showtooltip\n/cast [mod:shift,stance:1] Retaliation; [mod:shift] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt,stance:1] Sweeping Strikes; [mod:alt] Battle Stance; [stance:2] Thunder Clap; Defensive Stance"},
+    {"STD", "ST DPS", "BURST: Ctrl Recklessness -> Alt Bloodrage -> normaal Battle + Mortal Strike. Shift Overpower bij proc.", "#showtooltip\n/cast [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:alt] Bloodrage; [mod:shift] Overpower; [stance:1] Mortal Strike; Battle Stance"},
+    {"AOD", "AoE DPS", "BURST: Alt Sweeping Strikes -> Ctrl Recklessness -> normaal Berserker + Whirlwind. Shift Cleave bij rage-overflow.", "#showtooltip\n/cast [mod:alt,stance:1] Sweeping Strikes; [mod:alt] Battle Stance; [mod:ctrl,stance:3] Recklessness; [mod:ctrl] Berserker Stance; [mod:shift] Cleave; [stance:3] Whirlwind; Berserker Stance"}
   }
 }
 local tabs={"prot","fury","arms"}
@@ -139,7 +127,7 @@ local function build()
         btn:SetScript("OnClick",function() chosen=spec;showRows() end)
     end
     label(win,"GameFontDisableSmall",14,-82,570,"Sleep links een opener naar je actionbar. Rechtsklik/Edit om aan te passen.")
-    label(win,"GameFontDisableSmall",14,-99,570,"Normaal=hoofdspell, Shift/Ctrl/Alt=bewuste keuze. Elke cast vereist een keypress.")
+    label(win,"GameFontDisableSmall",14,-99,570,"Shift=Retal, Ctrl=Reck, Alt=talent/prep (per spec). Stance kan extra druk vereisen.")
     for i=1,4 do
         local y=-123-(i-1)*80
         local r={}
@@ -156,7 +144,7 @@ local function build()
         r.edit:SetText("Edit")
         rows[i]=r
     end
-    label(win,"GameFontDisableSmall",14,-450,570,"Geen /castsequence voor Revenge-procs: dat kan bij onbruikbare spells vastlopen.")
+    label(win,"GameFontDisableSmall",14,-450,570,"Bestaande macro? Edit > Default > Save voor de nieuwe burst-opener.")
     editor=CreateFrame("Frame",nil,win,"BackdropTemplate")
     editor:SetSize(570,241);editor:SetPoint("CENTER",win,"CENTER",0,0)
     editor:SetFrameStrata("FULLSCREEN_DIALOG")
