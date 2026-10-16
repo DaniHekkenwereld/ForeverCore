@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1-beta — 2026-10-16
+
+- Replaced 12 ability-shortcut templates with user-triggered **all-in burst openers** for ST/AoE threat and DPS across Prot/Fury/Arms.
+- Threat setup now includes stance-swapped Retaliation and Recklessness; Fury adds talented Death Wish, Arms AoE can use Sweeping Strikes.
+- Shift/Ctrl/Alt cast deliberate burst phases; normal press returns to the intended stance and attacks. No automated multi-GCD rotations.
+- Previously created macro bodies remain intact until manually changed via Openers > Edit > Default > Save.
+- Beta-only and pending in-game verification. Not proven optimal TPS/DPS.
+
+
 ## 0.2.0-beta — 2026-10-16
 
 - New `RaidWarnings.lua`: hostile target Sunder Armor stacks, Demoralizing Shout and Thunder Clap in raids, with unknown fallback when combat auras are protected.
