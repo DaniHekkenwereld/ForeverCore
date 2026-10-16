@@ -1,19 +1,23 @@
--- ForeverCore 0.1.0 (WoW: Forever Beta / Camelot)
+-- ForeverCore 0.2.0-beta (WoW: Forever Beta / Camelot)
 -- Display and convenience only. Does not automate spells or bypass protected APIs.
 
 local FC = CreateFrame("Frame")
+_G.ForeverCore = FC
 local prefix = "|cff80c9ffForeverCore|r "
 local defaults = {
     plateMode = "auto",       -- auto: friendly plates only inside raid instances
-    profile = "tank",         -- manual: 'tank' or 'fury'; Forever has no standard Retail spec API
+    profile = "tank",         -- manual: tank, fury or arms; beta talents API differs
     checkFlask = true,
     checkFood = true,
     checkShout = true,
+    raidDebuffs = true,
+    tauntAlerts = true,
     showOutsideRaid = false,
     x = 0,
     y = -195,
 }
 local db
+function FC:GetDatabase() return db end
 local inRaid = false
 local pendingPlateSync = false
 local lastPlates = nil
@@ -90,7 +94,7 @@ status:SetWidth(405)
 status:SetJustifyH("LEFT")
 local footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 footer:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 11)
-footer:SetText("/fc  |  /fc move  |  /fc macros")
+footer:SetText("/fc openers  |  /fc alerts on/off  |  /fc macros")
 frame:Hide()
 
 local function hasAuras()
@@ -262,7 +266,8 @@ local function handle(line)
     if not db then return end
     local arg, val = line:lower():match("^%s*(%S*)%s*(%S*)")
     if arg == "" or arg == "help" then
-        say("/fc check | /fc move | /fc macros | /fc plates auto/on/off | /fc mode tank/fury")
+        say("/fc check | /fc move | /fc macros | /fc openers [prot/fury/arms]")
+        say("/fc plates auto/on/off | /fc mode tank/fury/arms | /fc alerts on/off | /fc taunt on/off")
         say("/fc flask on/off | /fc food on/off | /fc shout on/off | /fc show on/off")
     elseif arg == "check" then
         refresh()
@@ -271,19 +276,22 @@ local function handle(line)
         moveFrame()
     elseif arg == "macros" then
         installMacros()
+    elseif arg == "openers" then
+        if FC.ShowOpeners then FC:ShowOpeners(val) else say("Opener-module niet geladen.") end
     elseif arg == "plates" and (val == "auto" or val == "on" or val == "off") then
         db.plateMode = val
         lastPlates = nil
         syncPlates()
         say("Friendly nameplates: " .. val)
-    elseif arg == "mode" and (val == "tank" or val == "fury") then
+    elseif arg == "mode" and (val == "tank" or val == "fury" or val == "arms") then
         db.profile = val
         refresh()
         say("Warrior-profiel: " .. val .. " (handmatig; geen automatische talentscan).")
-    elseif (arg == "flask" or arg == "food" or arg == "shout" or arg == "show") and switch(val) ~= nil then
-        local key = ({flask = "checkFlask", food = "checkFood", shout = "checkShout", show = "showOutsideRaid"})[arg]
+    elseif (arg == "flask" or arg == "food" or arg == "shout" or arg == "show" or arg == "alerts" or arg == "taunt") and switch(val) ~= nil then
+        local key = ({flask = "checkFlask", food = "checkFood", shout = "checkShout", show = "showOutsideRaid", alerts = "raidDebuffs", taunt = "tauntAlerts"})[arg]
         db[key] = switch(val)
         refresh()
+        if FC.UpdateRaidWarnings then FC:UpdateRaidWarnings() end
         say(arg .. " = " .. val)
     else
         say("Onbekende opdracht. Typ /fc help.")
@@ -310,7 +318,7 @@ FC:SetScript("OnEvent", function(_, event, ...)
             if db[k] == nil then db[k] = v end
         end
         position()
-        say("v0.1 geladen. /fc help voor opdrachten. /fc macros maakt Warrior-macro's aan.")
+        say("v0.2-beta geladen. /fc openers voor Warrior openers; /fc help voor opdrachten.")
     elseif not db then
         return
     elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" or event == "GROUP_ROSTER_UPDATE" then
