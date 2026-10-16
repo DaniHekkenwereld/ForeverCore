@@ -2,7 +2,7 @@
 ## Title: ForeverCore
 ## Notes: WoW Forever beta - raid nameplates, pre-pull checks and Warrior macro toolkit
 ## Author: Community prototype
-## Version: 0.2.0-beta
+## Version: 0.2.1-beta
 ## SavedVariables: ForeverCoreDB
 Core.lua
 RaidWarnings.lua
