@@ -1,0 +1,7 @@
+## Interface: 16001
+## Title: ForeverCore
+## Notes: WoW Forever beta - raid nameplates, pre-pull checks and Warrior macro toolkit
+## Author: Community prototype
+## Version: 0.1.0-beta
+## SavedVariables: ForeverCoreDB
+Core.lua
