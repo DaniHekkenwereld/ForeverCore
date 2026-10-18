@@ -1,9 +1,10 @@
 ## Interface: 16001
 ## Title: ForeverCore
-## Notes: WoW Forever beta - raid nameplates, pre-pull checks and Warrior macro toolkit
+## Notes: WoW Forever beta - Warrior tools and passive gameplay recorder
 ## Author: Community prototype
-## Version: 0.2.1-beta
+## Version: 0.3.0-beta
 ## SavedVariables: ForeverCoreDB
 Core.lua
 RaidWarnings.lua
 Openers.lua
+Recorder.lua
