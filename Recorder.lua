@@ -33,7 +33,8 @@ local function txt(x)
 end
 local function clock() return (type(GetTime) == "function" and GetTime()) or 0 end
 local function epoch()
-    for _, fn in ipairs({GetServerTime, time}) do
+    for _, fnName in ipairs({"GetServerTime", "time"}) do
+        local fn = _G[fnName]
         if type(fn) == "function" then
             local ok, value = pcall(fn)
             if ok and num(value) then return value end
