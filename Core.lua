@@ -269,6 +269,9 @@ local function handle(line)
         say("/fc check | /fc move | /fc macros | /fc openers [prot/fury/arms]")
         say("/fc plates auto/on/off | /fc mode tank/fury/arms | /fc alerts on/off | /fc taunt on/off")
         say("/fc flask on/off | /fc food on/off | /fc shout on/off | /fc show on/off")
+        say("/fc record [status|summary|on|off|native on|native off] | /fc mark <notitie>")
+    elseif arg == "record" or arg == "combatlog" or arg == "mark" then
+        if FC.RecorderCommand then FC:RecorderCommand(line) else say("Recorder-module ontbreekt.") end
     elseif arg == "check" then
         refresh()
         say("Pre-pull controle uitgevoerd (alleen buiten combat, vereist beschikbare aura-API).")
@@ -318,7 +321,7 @@ FC:SetScript("OnEvent", function(_, event, ...)
             if db[k] == nil then db[k] = v end
         end
         position()
-        say("v0.2-beta geladen. /fc openers voor Warrior openers; /fc help voor opdrachten.")
+        say("ForeverCore geladen. Gameplay recorder standaard aan; /fc record status en /fc help.")
     elseif not db then
         return
     elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" or event == "GROUP_ROSTER_UPDATE" then
