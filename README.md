@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.2.1-beta
+## Included in v0.3.0-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -26,6 +26,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
      Core.lua
      RaidWarnings.lua
      Openers.lua
+     Recorder.lua
    ```
 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
@@ -94,13 +95,49 @@ With `/fc alerts on`, a compact panel shows the Sunder stack count, Demo and Thu
 
 With `/fc taunt on`, a `UNIT_SPELLCAST_FAILED` event for your own Taunt shows **TAUNT CAST FAILED - CHECK TARGET**, and a succeeded cast shows **TAUNT USED - VERIFY TARGET**. The second text is a *reminder*, not confirmation that Taunt landed. **A Taunt RESIST or IMMUNE outcome cannot be attributed reliably from the normal combat log**, which Forever does not expose to addons. Neither this module nor the opener macros try to bypass protected combat data.
 
+
+## Passive gameplay recorder (v0.3.0 beta)
+
+**Designed for levelling:** no new window; both types of logging are **on by default**. The addon does not submit or upload any data.
+
+There are **two separate layers**:
+
+1. **ForeverCore gameplay history** (local SavedVariables): timestamped personal spellcast starts/success/failures, Rage snapshots when safely readable, stance changes, combat start/stop, deaths, levels/XP, accepted/completed quests, equipment snapshots, NPC IDs when available, zone changes, and non-combat map-position checkpoints approximately every 30 seconds. It does **not** store other players' names. Data hidden by the Forever combat API are skipped instead of guessed.
+2. **Blizzard's native combat log:** ForeverCore attempts to enable `LoggingCombat(true)` when entering the world, with a few bounded retries. This instructs the WoW client to write its own combat file. A successful request does **not** grant addons access to the restricted combat-log event stream. If Forever refuses the request, `/fc record status` shows that rather than falsely claiming logging is working.
+
+You may enable **Advanced Combat Logging** in WoW System > Network for more detail when supported by the client.
+
+### Commands
+
+| Command | Effect |
+| --- | --- |
+| `/fc record` or `/fc record status` | Show recording state, session/record counts and file locations |
+| `/fc record summary` | Quick counts of your own casts, failures, stance swaps, deaths, completed quests and combat time (retained events only) |
+| `/fc record on` / `/fc record off` | Start/stop ForeverCore SavedVariables recording |
+| `/fc record native on` / `/fc record native off` | Enable/disable automatic attempts to start Blizzard combat logging. Off does **not** shut down an existing log owned by you/another addon |
+| `/fc combatlog on` / `/fc combatlog off` | Short alias for the two native options above |
+| `/fc mark boss practise` | Add a manual note/marker to the gameplay history |
+
+### Where to get data for analysis
+
+After **logout** or **`/reload`**, find:
+
+- `World of Warcraft/_classic_beta_/WTF/Account/<account>/SavedVariables/ForeverCore.lua` — ForeverCore recording, all characters sharing this addon installation (session data contains no character name).
+- `World of Warcraft/_classic_beta_/Logs/WoWCombatLog*.txt` — the WoW client's raw combat history. The exact folder under the World of Warcraft installation may differ.
+
+Zip and share those two files when you want a detailed analysis of your Warrior levelling and opener. **They are not accessible to ChatGPT without being uploaded.** Avoid putting logs containing player names on a public GitHub repository.
+
+**Retention and disk usage:** ForeverCore retains the last **8 client sessions**, with a maximum of **15,000 events per session**. Older entries rotate out in batches when that cap is reached, while earlier sessions drop as new ones accumulate. Export periodically if you want a continuous levelling history. The native WoWCombatLog is not rotated or deleted by this addon and can become very large; archive or clear it yourself. SavedVariables write on normal logout or `/reload`, not after every cast, so a crash can lose recent events.
+
+**Limits:** No addon-side parsing of `COMBAT_LOG_EVENT_UNFILTERED`, secret combat values, guaranteed per-ability damage, real threat or boss target. Auto-start via `LoggingCombat`, spell event coverage, SavedVariables persistence and the placement of raw combatlogs must still be confirmed in the actual Forever beta client. The in-game summary is retrospective, not live combat advice.
+
 ## Known limitations
 
 - Addons cannot reliably compare protected/secret boss target data in some combat contexts. A reliable **boss targets me** alert has **not** been implemented in v0.1. Use Blizzard's target-of-target UI where supported.
 - Friendly raid nameplates are restricted by Blizzard. A CVar request can be rejected or ignored, and the addon does not customize Blizzard friendly nameplates.
 - Consumables are checked outside combat only; flask/food identification currently relies on English/Dutch buff-name matching. Custom Forever buffs may need explicit matching.
 - SavedVariables persistence and client interface version need confirmation in the actual beta.
-- A full cooldown HUD, full threat UI, encounter-specific warnings and complete options panel are not included yet.
+- A full cooldown HUD, full threat UI, encounter-specific warnings and complete options panel are not included yet. The new passive recorder is not a cooldown HUD.
 - Raid debuffs might be partially/completely protected in combat, depending on beta API conditions.
 - The Taunt notifier cannot reliably report the result of a resist/miss; see the section above.
 - In-game testing and 12-macro button dragging still need validation on the current beta build.
@@ -110,7 +147,7 @@ With `/fc taunt on`, a `UNIT_SPELLCAST_FAILED` event for your own Taunt shows **
 1. In-game API smoke test of v0.2.1, including buttons, combat restrictions and event payloads.
 2. Validate boss debuff visibility and Taunt event coverage; keep unreadable combat information explicitly unknown.
 3. Better pre-pull aura detection, including Forever-specific buffs.
-4. Protection/Fury/Arms HUD for cooldowns, rage and defensive readiness, subject to beta API limits.
+4. Protection/Fury/Arms HUD for cooldowns, rage and defensive readiness, subject to beta API limits.\n5. Review the recorder's first real beta export, verify available events and derive levelling/threat recommendations from the readable combatlog.
 5. Movable configuration UI and modules.
 6. Encounter-specific warnings and safer boss target signals when supported by the addon API.
 
