@@ -117,3 +117,10 @@ With `/fc taunt on`, a `UNIT_SPELLCAST_FAILED` event for your own Taunt shows **
 ## Disclaimer
 
 Unofficial community project; not affiliated with Blizzard Entertainment. The addon uses supported Lua addon interfaces and does not attempt protected combat actions or gameplay automation.
+## Warrior threat theorycrafting (beta)
+
+- [Measured Forever threat formulas & outstanding tests](THREAT_RESEARCH.md) — separates community-tested rank coefficients from unknown level-60 values.
+- [Offline formula calculator](tools/threat_calculator.py) — computes only tested spell ranks and Rage-generated threat; it deliberately refuses unsupported ranks and does not claim a validated level-60 max-threat opener.
+- Tests: `python -m unittest discover -s tools -v` (Python 3.10+).
+
+The pre-pull and opener macros are still **manual**, and their threat priority is experimental until Shield Slam and final-rank coefficients are measured. This research does not change any in-game actionbar behavior.
