@@ -47,6 +47,7 @@ local function settings()
     local s = db.accountSetup
     if s.autoCVars == nil then s.autoCVars = true end
     if s.autoBindings == nil then s.autoBindings = true end
+    if s.autoActionBars == nil then s.autoActionBars = true end
     if type(s.applied) ~= "table" then s.applied = {} end
     if type(s.backups) ~= "table" then s.backups = {} end
     -- Migrate pre-0.3 default: keep friendly plates enabled everywhere.
@@ -87,10 +88,71 @@ local function setCVar(name, value)
     local after = getCVar(name)
     return after ~= nil and tonumber(after) == tonumber(value)
 end
+-- Four EXTRA Blizzard action bars: Bottom Left, Bottom Right, Right 1, Right 2.
+-- Prefer native toggles (official Forever API), preserve 5/6/7 if present.
+-- In modern clients, the Settings proxies update visibility immediately.
+local actionBarProxies = {
+    "PROXY_SHOW_ACTIONBAR_2",
+    "PROXY_SHOW_ACTIONBAR_3",
+    "PROXY_SHOW_ACTIONBAR_4",
+    "PROXY_SHOW_ACTIONBAR_5",
+}
+local actionBarCVars = {
+    "bottomLeftActionBar",
+    "bottomRightActionBar",
+    "rightActionBar",
+    "rightTwoActionBar",
+}
+local function enableFourActionBars()
+    local s = settings()
+    if not s or not s.autoCVars or not s.autoActionBars then return end
+    if locked() then pending = true; return end
+
+    local supported = false
+    if type(GetActionBarToggles) == "function" and type(SetActionBarToggles) == "function" then
+        local ok, a, b, c, d, e, g, h = pcall(GetActionBarToggles)
+        if ok and type(a) == "boolean" and type(b) == "boolean"
+            and type(c) == "boolean" and type(d) == "boolean" then
+            supported = true
+            if not (a and b and c and d) then
+                -- Keep optional bars 5-7 at their previous values.
+                local applied = pcall(SetActionBarToggles, true, true, true, true, e, g, h)
+                if not applied then supported = false end
+            end
+        end
+    end
+
+    -- Modern UI Settings proxies; each maps to an extra action bar.
+    if type(Settings) == "table"
+        and type(Settings.GetSetting) == "function"
+        and type(Settings.SetValue) == "function" then
+        for _, key in ipairs(actionBarProxies) do
+            local ok, setting = pcall(Settings.GetSetting, key)
+            if ok and setting ~= nil then
+                local wrote = pcall(Settings.SetValue, key, true)
+                if wrote then supported = true end
+            end
+        end
+    end
+
+    -- Fallback for older UI flavors that expose these CVars.
+    if not supported then
+        for _, key in ipairs(actionBarCVars) do
+            local result = setCVar(key, "1")
+            if result == true then supported = true end
+        end
+    end
+    if not supported and not warned["actionBars"] then
+        warned["actionBars"] = true
+        say("Extra action bars konden niet automatisch worden ingesteld op deze client.")
+    end
+end
+
 local function applyCVars()
     local s, db = settings()
     if not s or not s.autoCVars then return end
     if locked() then pending = true; return end
+    enableFourActionBars()
     for _, pair in ipairs(desiredCVars) do
         local result = setCVar(pair[1], pair[2])
         if result == false and not warned[pair[1]] then
@@ -251,6 +313,15 @@ local function status()
     local p = s.profile
     say("Setup: CVars " .. (s.autoCVars and "aan" or "uit") .. ", keybind-sync " .. (s.autoBindings and "aan" or "uit")
         .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "Warrior starter (6 toetsen; geen hoofdchar nodig)") .. ".")
+    local bars = "onbekend"
+    if type(GetActionBarToggles) == "function" then
+        local ok, a, b, c, d = pcall(GetActionBarToggles)
+        if ok then
+            bars = tostring(a) .. "/" .. tostring(b) .. "/" .. tostring(c) .. "/" .. tostring(d)
+        end
+    end
+    say("Extra bars onder links/rechts + rechts 1/2: " .. bars
+        .. " (auto: " .. (s.autoActionBars and "aan" or "uit") .. ").")
     say("Auto loot=" .. tostring(getCVar("autoLootDefault"))
         .. ", enemy plates=" .. tostring(getCVar("nameplateShowEnemies"))
         .. ", friend plates=" .. tostring(getCVar("nameplateShowFriends") or getCVar("nameplateShowFriendlyPlayers"))
@@ -265,12 +336,17 @@ function FC:SetupCommand(raw)
     elseif command == "bindings" and (option == "on" or option == "off") then
         local s = settings(); if s then s.autoBindings = option == "on" end
         say("Automatische keybind-sync: " .. option)
+    elseif command == "bars" and (option == "on" or option == "off") then
+        local s = settings()
+        if s then s.autoActionBars = option == "on" end
+        if option == "on" then enableFourActionBars() end
+        say("Vier extra action bars automatisch aanzetten: " .. option)
     elseif command == "settings" and (option == "on" or option == "off") then
         local s = settings(); if s then s.autoCVars = option == "on" end
         if option == "on" then applyCVars() end
         say("Automatische clientinstellingen: " .. option)
     else
-        say("/fc setup capture | apply | restore | status | bindings on/off | settings on/off")
+        say("/fc setup capture | apply | restore | status | bindings on/off | settings on/off | bars on/off")
     end
 end
 f:RegisterEvent("PLAYER_LOGIN")
