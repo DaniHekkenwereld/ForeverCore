@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.0-beta
+## Included in v0.3.1-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -27,16 +27,45 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
      RaidWarnings.lua
      Openers.lua
      Recorder.lua
+     AccountSetup.lua
+     Recorder.lua
    ```
 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
 3. Launch WoW Forever, enable **ForeverCore** on the AddOns screen and run `/fc help`.
+
+## Automatic setup for every new character (v0.3.1)
+
+**One-time setup on your main character:** arrange your existing keybinds exactly as you like them, then run `/fc setup capture`. ForeverCore records *all accessible key bindings* in **account-wide SavedVariables**, including the additional keys beyond the two shown in Blizzard's key binding menu. It does **not** read the local `WTF` files or know your bindings until you capture them.
+
+On subsequent character logins, ForeverCore automatically imports that profile **regardless of character name**. It uses the character GUID only to track when that character received the current profile revision. Characters of the **same class** get the full keybind profile. Characters of **another class** get the common bindings, while direct `SPELL`/`MACRO`/`ITEM`/`CLICK` mappings from the source class are excluded. This is intentional: it avoids binding Warrior-only spells on a Rogue.
+
+Before the first automatic import on a character, ForeverCore stores its previous keybind set as a restore point. The new profile is saved as **character-specific bindings** so a newly created character continues using it after logout. Run `/fc setup restore` to bring back the saved original keybinds for that character; this also excludes the character from future automatic imports until you explicitly run `/fc setup apply`.
+
+The module sets these options automatically, including characters created before you captured a profile:
+
+| Setting | Desired value |
+| --- | --- |
+| Auto loot | On (`autoLootDefault=1`) |
+| Enemy nameplates | On (`nameplateShowEnemies=1`) |
+| Friendly nameplates | On, including outside raids (where available) |
+| Always show nameplates | On (`nameplateShowAll=1`) |
+| Nameplate distance | Request 60 yards (`nameplateMaxDistance=60`, `nameplatePlayerMaxDistance=60`) |
+
+Blizzard can limit the *effective* distance in the Forever beta, even when the CVar reads back 60. Secure CVar or keybinding changes only run **outside combat** and can be rejected by the client. The addon reports failures rather than bypassing restrictions.
+
+**Important:** Keybinds are *not* action bar contents. This copies which keys trigger which buttons/actions; it does not copy your main character's learned spells, talent build, action bar slot contents, equipment, or character-specific macros. Some macro bindings may require corresponding macros on that character.
+
+To control the module: `/fc setup capture` (save current bindings), `/fc setup status` (inspect), `/fc setup apply` (apply immediately), `/fc setup restore` (recover old bindings), `/fc setup bindings on/off` (auto-sync), `/fc setup settings on/off` (auto-CVars). Changes are available across characters on the same WoW account/client SavedVariables scope.
 
 ## Commands
 
 | Command | Effect |
 | --- | --- |
 | `/fc help` | Show available commands |
+| `/fc setup` | Show account setup commands |
+| `/fc setup capture` | Capture current complete keybind profile as the shared baseline |
+| `/fc setup status` | Show whether profile / client options are active |
 | `/fc check` | Run the pre-pull check again (out of combat) |
 | `/fc move` | Drag the status panel (out of combat) |
 | `/fc show on` or `/fc show off` | Show/hide the panel outside raid instances |
