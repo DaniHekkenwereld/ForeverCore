@@ -267,11 +267,18 @@ local function handle(line)
     local arg, val = line:lower():match("^%s*(%S*)%s*(%S*)")
     if arg == "" or arg == "help" then
         say("/fc check | /fc move | /fc macros | /fc openers [prot/fury/arms]")
+        say("/fc setup [capture|status|apply|restore|bindings|settings]")
         say("/fc plates auto/on/off | /fc mode tank/fury/arms | /fc alerts on/off | /fc taunt on/off")
         say("/fc flask on/off | /fc food on/off | /fc shout on/off | /fc show on/off")
         say("/fc record [status|summary|on|off|native on|native off] | /fc mark <notitie>")
     elseif arg == "record" or arg == "combatlog" or arg == "mark" then
         if FC.RecorderCommand then FC:RecorderCommand(line) else say("Recorder-module ontbreekt.") end
+    elseif arg == "setup" then
+        if FC.SetupCommand then
+            FC:SetupCommand(line:match("^%s*%S+%s*(.-)%s*$") or "")
+        else
+            say("AccountSetup.lua is niet geladen.")
+        end
     elseif arg == "check" then
         refresh()
         say("Pre-pull controle uitgevoerd (alleen buiten combat, vereist beschikbare aura-API).")
