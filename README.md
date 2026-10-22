@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.2-beta
+## Included in v0.3.3-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -34,7 +34,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
 3. Launch WoW Forever, enable **ForeverCore** on the AddOns screen and run `/fc help`.
 
-## Fresh-character setup (v0.3.2) — no main character required
+## Fresh-character setup (v0.3.3) — no main character required
 
 **From the very first character on launch**, ForeverCore sets auto loot and friendly/enemy nameplates, and requests maximum nameplate range (60 yards; actual cap controlled by client/server). No captured bindings or existing character are needed for these settings.
 
@@ -64,10 +64,16 @@ Before modifying a character's bindings the addon saves a per-character restore 
 | Friendly nameplates | On, when available |
 | Always show nameplates | On (`nameplateShowAll=1`) |
 | Nameplate range | Request 60 yards, limited by the game |
+| Bottom Left action bar | On (extra bar 1) |
+| Bottom Right action bar | On (extra bar 2) |
+| Right action bar 1 | On (extra bar 3) |
+| Right action bar 2 | On (extra bar 4) |
 
 **Important:** Keybinds are not the same as action bar contents. The starter uses direct spell and stance bindings, so its six mapped abilities don't depend on action bar placement. Other spells, talent builds, equipment and any additional actionbar layout remain character-specific.
 
-Commands: `/fc setup status` (inspect), `/fc setup capture` (optional full profile), `/fc setup apply` (reapply), `/fc setup restore` (restore previous binds), `/fc setup bindings on/off`, `/fc setup settings on/off`.
+WoW Forever exposes the action bar toggle API. ForeverCore requests that all four **additional** Blizzard action bars be visible at every login (the primary main bar already exists). It tries the native toggle API and modern UI settings, retaining the state of optional extra bars 5–7. In some builds, a UI reload may be required for visibility to update. Use `/fc setup status` to inspect the configured bars or `/fc setup bars off` to stop enforcing this preference.
+
+Commands: `/fc setup status` (inspect), `/fc setup capture` (optional full profile), `/fc setup apply` (reapply), `/fc setup restore` (restore previous binds), `/fc setup bindings on/off`, `/fc setup settings on/off`, `/fc setup bars on/off`.
 
 ## Commands
 
