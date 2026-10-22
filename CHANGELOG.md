@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.3-beta — 2026-10-22
+
+- Automatically enable all four additional Blizzard action bars on new and existing characters: Bottom Left, Bottom Right, Right 1 and Right 2.
+- Prefer Forever's native Get/SetActionBarToggles API, preserving additional bar 5–7 settings; use modern settings proxies and CVar fallbacks where supported.
+- Out-of-combat only, with clear warning if none of the client methods works.
+- Added `/fc setup bars on/off` and bar status to `/fc setup status`.
+- Pending test in actual Forever beta, as some action bar toggles apply only after reload.
+
+
 ## 0.3.2-beta — 2026-10-22
 
 - No existing main character required: bootstrap the six known Warrior bindings automatically on first-ever Warrior login (mouse side 1/2 for Battle/Defensive, G Berserker, middle Taunt, scroll down Heroic Strike, scroll up Cleave).
