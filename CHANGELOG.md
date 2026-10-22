@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1-beta — 2026-10-22
+
+- Added `AccountSetup.lua`: character-name-independent account-level onboarding using shared SavedVariables.
+- Auto-enable auto loot, friendly/enemy nameplates and always-show plates, requesting 60-yard nameplate distance within client/server limits.
+- Capture all existing keybindings on a chosen main character via `/fc setup capture`; synchronize to other/new characters on first login. No guessing your layout.
+- Save backups of prior bindings, offer `/fc setup restore`, manual apply and opt-out commands.
+- Preserve existing recorder, threat research and Warrior macro modules unchanged.
+- Pending in-client compatibility tests on Forever beta.
+
+
 ## 0.2.1-beta — 2026-10-16
 
 - Replaced 12 ability-shortcut templates with user-triggered **all-in burst openers** for ST/AoE threat and DPS across Prot/Fury/Arms.
