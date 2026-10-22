@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.1-beta
+## Included in v0.3.2-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -34,29 +34,40 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
 3. Launch WoW Forever, enable **ForeverCore** on the AddOns screen and run `/fc help`.
 
-## Automatic setup for every new character (v0.3.1)
+## Fresh-character setup (v0.3.2) — no main character required
 
-**One-time setup on your main character:** arrange your existing keybinds exactly as you like them, then run `/fc setup capture`. ForeverCore records *all accessible key bindings* in **account-wide SavedVariables**, including the additional keys beyond the two shown in Blizzard's key binding menu. It does **not** read the local `WTF` files or know your bindings until you capture them.
+**From the very first character on launch**, ForeverCore sets auto loot and friendly/enemy nameplates, and requests maximum nameplate range (60 yards; actual cap controlled by client/server). No captured bindings or existing character are needed for these settings.
 
-On subsequent character logins, ForeverCore automatically imports that profile **regardless of character name**. It uses the character GUID only to track when that character received the current profile revision. Characters of the **same class** get the full keybind profile. Characters of **another class** get the common bindings, while direct `SPELL`/`MACRO`/`ITEM`/`CLICK` mappings from the source class are excluded. This is intentional: it avoids binding Warrior-only spells on a Rogue.
+For **new Warriors**, it now also applies these **six known keybinds** automatically, without clearing any other keybinds:
 
-Before the first automatic import on a character, ForeverCore stores its previous keybind set as a restore point. The new profile is saved as **character-specific bindings** so a newly created character continues using it after logout. Run `/fc setup restore` to bring back the saved original keybinds for that character; this also excludes the character from future automatic imports until you explicitly run `/fc setup apply`.
+| Key | Action |
+| --- | --- |
+| Mouse thumb button 1 (`BUTTON4`) | Battle Stance (`SHAPESHIFTBUTTON1`) |
+| Mouse thumb button 2 (`BUTTON5`) | Defensive Stance (`SHAPESHIFTBUTTON2`) |
+| `G` | Berserker Stance (`SHAPESHIFTBUTTON3`) |
+| Middle mouse (`BUTTON3`) | Taunt (direct spell binding) |
+| Scroll down (`MOUSEWHEELDOWN`) | Heroic Strike (direct spell binding) |
+| Scroll up (`MOUSEWHEELUP`) | Cleave (direct spell binding) |
 
-The module sets these options automatically, including characters created before you captured a profile:
+Mouse thumb buttons are assumed to report as `BUTTON4` and `BUTTON5`. Actual hardware numbering should be verified on launch. The direct spell bindings use English spell names; check localized client support. Stances and abilities become useful as the Warrior learns them.
 
-| Setting | Desired value |
+The other keybinds are **not guessed** or overwritten. Other classes receive the shared client settings but no Warrior spell bindings. For complete starter layouts on other classes, dedicated class presets must be defined.
+
+After you've configured the remaining keys on a character, you can optionally use `/fc setup capture` to create a complete shared keybind profile. That captured profile then takes precedence over the built-in six-key starter on future logins. The account-wide profile applies on all characters regardless of their names, filtered to avoid pushing class-specific spell bindings to other classes.
+
+Before modifying a character's bindings the addon saves a per-character restore point. Run `/fc setup restore` to recover it, or `/fc setup apply` to force the selected profile again. Changes run only **outside combat** and might be rejected by Forever beta API restrictions.
+
+| Automatic game setting | Requested value |
 | --- | --- |
 | Auto loot | On (`autoLootDefault=1`) |
 | Enemy nameplates | On (`nameplateShowEnemies=1`) |
-| Friendly nameplates | On, including outside raids (where available) |
+| Friendly nameplates | On, when available |
 | Always show nameplates | On (`nameplateShowAll=1`) |
-| Nameplate distance | Request 60 yards (`nameplateMaxDistance=60`, `nameplatePlayerMaxDistance=60`) |
+| Nameplate range | Request 60 yards, limited by the game |
 
-Blizzard can limit the *effective* distance in the Forever beta, even when the CVar reads back 60. Secure CVar or keybinding changes only run **outside combat** and can be rejected by the client. The addon reports failures rather than bypassing restrictions.
+**Important:** Keybinds are not the same as action bar contents. The starter uses direct spell and stance bindings, so its six mapped abilities don't depend on action bar placement. Other spells, talent builds, equipment and any additional actionbar layout remain character-specific.
 
-**Important:** Keybinds are *not* action bar contents. This copies which keys trigger which buttons/actions; it does not copy your main character's learned spells, talent build, action bar slot contents, equipment, or character-specific macros. Some macro bindings may require corresponding macros on that character.
-
-To control the module: `/fc setup capture` (save current bindings), `/fc setup status` (inspect), `/fc setup apply` (apply immediately), `/fc setup restore` (recover old bindings), `/fc setup bindings on/off` (auto-sync), `/fc setup settings on/off` (auto-CVars). Changes are available across characters on the same WoW account/client SavedVariables scope.
+Commands: `/fc setup status` (inspect), `/fc setup capture` (optional full profile), `/fc setup apply` (reapply), `/fc setup restore` (restore previous binds), `/fc setup bindings on/off`, `/fc setup settings on/off`.
 
 ## Commands
 
@@ -64,7 +75,7 @@ To control the module: `/fc setup capture` (save current bindings), `/fc setup s
 | --- | --- |
 | `/fc help` | Show available commands |
 | `/fc setup` | Show account setup commands |
-| `/fc setup capture` | Capture current complete keybind profile as the shared baseline |
+| `/fc setup capture` | Optionally capture all your edited keybinds; not required on the first character |
 | `/fc setup status` | Show whether profile / client options are active |
 | `/fc check` | Run the pre-pull check again (out of combat) |
 | `/fc move` | Drag the status panel (out of combat) |
