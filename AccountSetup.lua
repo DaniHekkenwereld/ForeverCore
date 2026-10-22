@@ -1,5 +1,6 @@
 -- ForeverCore: account-wide onboarding for new characters.
--- The player captures their bindings once; no guessing or overwriting before capture.
+-- Includes six known Warrior bindings for a fresh Forever character; no existing main is required.
+-- An optional captured profile still overrides the built-in starter, when the user wants that.
 -- Binding writes and secure CVars are only attempted out of combat.
 local FC = _G.ForeverCore
 if not FC then return end
@@ -17,6 +18,20 @@ local desiredCVars = {
     {"nameplatePlayerMaxDistance", "60"},
 }
 local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
+
+-- The user's established Warrior keybinds, not a guessed full layout.
+-- BUTTON4/BUTTON5 assume the two mouse thumb buttons; edit if hardware differs.
+-- Direct SPELL bindings work independently of action-bar slot placement.
+-- Stance bar commands use the standard Warrior stance order.
+local starterRevision = "warrior-starter-1"
+local warriorStarter = {
+    {"BUTTON4", "SHAPESHIFTBUTTON1"},    -- Battle Stance
+    {"BUTTON5", "SHAPESHIFTBUTTON2"},    -- Defensive Stance
+    {"G", "SHAPESHIFTBUTTON3"},          -- Berserker Stance
+    {"BUTTON3", "SPELL Taunt"},          -- middle mouse
+    {"MOUSEWHEELDOWN", "SPELL Heroic Strike"},
+    {"MOUSEWHEELUP", "SPELL Cleave"},
+}
 
 local function say(message)
     if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage(prefix .. message) end
@@ -146,44 +161,63 @@ local function writeBindings(desired, clearExisting, saveMode)
 end
 local function applyBindings(force)
     local s = settings()
-    if not s or not s.autoBindings and not force then return end
-    local profile = s.profile
-    if type(profile) ~= "table" or type(profile.keys) ~= "table" or #profile.keys < 5 then return end
+    if not s or (not s.autoBindings and not force) then return end
     if locked() then pending = true; return end
     local guid = playerID()
     if not guid then pending = true; return end
-    local revision = profile.revision
+    local characterClass = classToken()
+    local profile = s.profile
+    local captured = type(profile) == "table" and type(profile.keys) == "table" and #profile.keys >= 5
+    local starter = not captured and characterClass == "WARRIOR"
+    if not captured and not starter then return end
+    local revision = captured and profile.revision or starterRevision
     if not force and s.applied[guid] == revision then return end
     if s.excluded and s.excluded[guid] and not force then return end
     if running then return end
     running = true
-    local isSameClass = profile.class == classToken()
+
+    local sameClass = captured and profile.class == characterClass
     local target = {}
-    for _, pair in ipairs(profile.keys) do
-        local key, command = pair[1], pair[2]
-        if type(key) == "string" and type(command) == "string"
-            and (isSameClass or not classSpecific(command)) then
-            target[#target + 1] = {key, command}
+    if starter then
+        for _, pair in ipairs(warriorStarter) do
+            target[#target + 1] = {pair[1], pair[2]}
+        end
+    else
+        for _, pair in ipairs(profile.keys) do
+            local key, command = pair[1], pair[2]
+            if type(key) == "string" and type(command) == "string"
+                and (sameClass or not classSpecific(command)) then
+                target[#target + 1] = {key, command}
+            end
         end
     end
+
     local current = collect()
-    if not current then running = false; say("Keybind API nog niet beschikbaar."); return end
-    -- Keep a per-character restore point before first change in this revision.
-    if not s.backups[guid] then
-        local mode = type(GetCurrentBindingSet) == "function" and GetCurrentBindingSet() or 2
-        s.backups[guid] = {keys = current, mode = (mode == 1 and 1 or 2)}
+    if not current then
+        running = false
+        say("Keybind API nog niet beschikbaar; probeer opnieuw met /fc setup apply.")
+        return
     end
-    -- For the same class clone exactly. On another class keep its class-specific keys.
-    local ok, reason = writeBindings(target, isSameClass, 2)
+    -- Backup once before any write. Never clear other keys when using the six-key starter.
+    if not s.backups[guid] then
+        s.backups[guid] = {keys = current, mode = 2}
+    end
+    local ok, reason = writeBindings(target, captured and sameClass, 2)
     running = false
     if ok then
         s.applied[guid] = revision
         if s.excluded then s.excluded[guid] = nil end
-        say("Keybind-profiel toegepast: " .. #target .. " toetsen (" .. (isSameClass and "volledig" or "class-onafhankelijk") .. ").")
+        if starter then
+            say("Starter-keybinds: 6 Warrior-toetsen ingesteld; overige bindings blijven staan.")
+        else
+            say("Keybind-profiel toegepast: " .. #target .. " toetsen ("
+                .. (sameClass and "volledig" or "class-onafhankelijk") .. ").")
+        end
     else
-        say("Keybind-sync mislukt (" .. tostring(reason) .. "). Backup: /fc setup restore. ")
+        say("Keybind-sync mislukt (" .. tostring(reason) .. "). Backup: /fc setup restore.")
     end
 end
+
 local function capture()
     local s = settings()
     if not s then return end
@@ -202,7 +236,7 @@ local function restore()
     local guid = playerID()
     if not guid or not s.backups[guid] then say("Geen originele keybind-backup voor dit character."); return end
     local backup = s.backups[guid]
-    local ok, reason = writeBindings(backup.keys, true, backup.mode)
+    local ok, reason = writeBindings(backup.keys, true, 2) -- never alter account-wide bindings to restore one character
     if ok then
         s.excluded = s.excluded or {}
         s.excluded[guid] = true -- no automatic re-apply after restore
@@ -216,7 +250,7 @@ local function status()
     if not s then return end
     local p = s.profile
     say("Setup: CVars " .. (s.autoCVars and "aan" or "uit") .. ", keybind-sync " .. (s.autoBindings and "aan" or "uit")
-        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "niet opgenomen") .. ".")
+        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "Warrior starter (6 toetsen; geen hoofdchar nodig)") .. ".")
     say("Auto loot=" .. tostring(getCVar("autoLootDefault"))
         .. ", enemy plates=" .. tostring(getCVar("nameplateShowEnemies"))
         .. ", friend plates=" .. tostring(getCVar("nameplateShowFriends") or getCVar("nameplateShowFriendlyPlayers"))
