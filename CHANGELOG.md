@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2-beta — 2026-10-22
+
+- No existing main character required: bootstrap the six known Warrior bindings automatically on first-ever Warrior login (mouse side 1/2 for Battle/Defensive, G Berserker, middle Taunt, scroll down Heroic Strike, scroll up Cleave).
+- Preserve every other keybind in starter mode; optional full profile capture remains available later.
+- Non-Warriors receive client settings but no Warrior-specific starter binds.
+- Per-character restore saves to character binding set to avoid unintentionally changing account-wide binding definitions.
+- This requires live Forever-client testing, particularly side mouse button numbering, direct spell binding compatibility and secure API restrictions.
+
+
 ## 0.3.1-beta — 2026-10-22
 
 - Added `AccountSetup.lua`: character-name-independent account-level onboarding using shared SavedVariables.
