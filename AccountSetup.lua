@@ -394,8 +394,17 @@ local function status()
         .. ", friend plates=" .. tostring(getCVar("nameplateShowFriends") or getCVar("nameplateShowFriendlyPlayers"))
         .. ", afstand=" .. tostring(getCVar("nameplateMaxDistance")) .. " (effectieve servercap kan lager zijn).")
 end
+local function printStarterLayout()
+    say("Screenshot keybind preset (" .. #screenshotBindings .. " bindings; 3 rows + 2 overflow):")
+    say("Main: 1, 2, 3, R, WD, Z, [unknown], Alt-P, 6")
+    say("Bottom Left: F, C, G, Q, T, V, [unknown], Alt-E, Alt-2, Alt-G")
+    say("Bottom Right: [unknown], Shift-C, [unknown], Shift-Space, Shift-V, Shift-X, Shift-E, Alt-T, Alt-R, Alt-F, Alt-V, Shift-2")
+    say("Right bar: Alt-3, Alt-X. Warrior override: G=Berserker, WD=Heroic Strike; mouse 4/5, middle, wheel up kept.")
+    say("Assumed row-to-bar positions; screenshot does not show which Blizzard bar each row belongs to.")
+end
 function FC:SetupCommand(raw)
     local command, option = tostring(raw or ""):lower():match("^%s*(%S*)%s*(%S*)")
+    if command == "layout" then printStarterLayout()
     if command == "capture" then capture()
     elseif command == "apply" then applyBindings(true)
     elseif command == "restore" then restore()
@@ -413,7 +422,7 @@ function FC:SetupCommand(raw)
         if option == "on" then applyCVars() end
         say("Automatische clientinstellingen: " .. option)
     else
-        say("/fc setup capture | apply | restore | status | bindings on/off | settings on/off | bars on/off")
+        say("/fc setup layout | capture | apply | restore | status | bindings on/off | settings on/off | bars on/off")
     end
 end
 f:RegisterEvent("PLAYER_LOGIN")
