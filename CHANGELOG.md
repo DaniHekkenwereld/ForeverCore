@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.10-beta — 2026-10-23
+
+- Removed the Defensive Stance reminder icon, glow and stance-state checks from the pre-pull HUD.
+- The sole remaining pre-pull reminder is Battle Shout (44x44 pulsing icon when missing).
+- Preserved `/fc move`, showing just the Battle Shout icon while positioning.
+- No changes to stance keybinds, macro functionality, nameplates, or other modules.
+
+
 ## 0.3.9-beta — 2026-10-23
 
 - Replaced 438x100 black text pre-pull dialog with **two 44x44 spell artwork icons**, Battle Shout and Defensive Stance.
