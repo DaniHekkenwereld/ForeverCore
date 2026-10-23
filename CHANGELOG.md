@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.8-beta — 2026-10-23
+
+- Beta screenshot confirmed pre-pull HUD loads, regular and modified bars are visible, but old secondary bindings (e.g. main slot 5's old `5`) remain next to the new `Q` assignment.
+- Preset now checks every targeted actionbar command and removes extra legacy/default keys before applying its unique intended key. This keeps an existing restore backup; `/fc setup restore` remains available.
+- Pre-pull check no longer warns level-8 Warriors about Defensive Stance; checks whether the stance has been learned at later levels, if the API is available.
+- Updated starter preset revision so fixes apply on the next character login after upgrading.
+- Pending live client retest for proper key labels and error-free load.
+
+
 ## 0.3.7-beta — 2026-10-23
 
 - Fix `AccountSetup.lua` load-blocking Lua syntax error (`if` changed to `elseif` in `/fc setup` command handling); previous builds reported `end expected near <eof>`.
