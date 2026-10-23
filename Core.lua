@@ -1,4 +1,4 @@
--- ForeverCore 0.2.0-beta (WoW: Forever Beta / Camelot)
+-- ForeverCore 0.3.9-beta (WoW: Forever Beta / Camelot)
 -- Display and convenience only. Does not automate spells or bypass protected APIs.
 
 local FC = CreateFrame("Frame")
@@ -72,30 +72,86 @@ local function syncPlates()
     pendingPlateSync = false
 end
 
-local frame = CreateFrame("Frame", "ForeverCorePrepull", UIParent, "BackdropTemplate")
-frame:SetSize(438, 100)
+-- Compact icon-only reminders: no dialog, labels, headers or warning text.
+-- The icon exists only when Battle Shout / Defensive Stance is missing.
+local frame = CreateFrame("Frame", "ForeverCorePrepull", UIParent)
+frame:SetSize(110, 54)
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, -195)
-frame:SetFrameStrata("MEDIUM")
-if frame.SetBackdrop then
-    frame:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    frame:SetBackdropColor(0.025, 0.035, 0.05, 0.88)
-    frame:SetBackdropBorderColor(0.24, 0.36, 0.48, 0.85)
-end
-local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-title:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, -10)
-title:SetText("FOREVERCORE  ·  PRE-PULL")
-local status = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-status:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -12)
-status:SetWidth(405)
-status:SetJustifyH("LEFT")
-local footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-footer:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 11)
-footer:SetText("/fc openers  |  /fc alerts on/off  |  /fc macros")
+frame:SetFrameStrata("HIGH")
+frame:EnableMouse(false)
 frame:Hide()
+
+local function iconTexture(spellID, fallback)
+    if C_Spell and type(C_Spell.GetSpellTexture) == "function" then
+        local ok, texture = pcall(C_Spell.GetSpellTexture, spellID)
+        if ok and readable(texture) and (type(texture) == "string" or type(texture) == "number") then
+            return texture
+        end
+    end
+    if C_Spell and type(C_Spell.GetSpellInfo) == "function" then
+        local ok, info = pcall(C_Spell.GetSpellInfo, spellID)
+        if ok and readable(info) and type(info) == "table" then
+            local texture = info.iconID
+            if readable(texture) and (type(texture) == "string" or type(texture) == "number") then
+                return texture
+            end
+        end
+    end
+    if type(GetSpellTexture) == "function" then
+        local ok, texture = pcall(GetSpellTexture, spellID)
+        if ok and readable(texture) and (type(texture) == "string" or type(texture) == "number") then
+            return texture
+        end
+    end
+    return fallback
+end
+local function createReminder(spellID, fallback, offset)
+    local holder = CreateFrame("Frame", nil, frame)
+    holder:SetSize(44, 44)
+    holder:SetPoint("CENTER", frame, "CENTER", offset, 0)
+
+    local icon = holder:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints(holder)
+    icon:SetTexture(iconTexture(spellID, fallback))
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+    local border = holder:CreateTexture(nil, "OVERLAY")
+    border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    border:SetBlendMode("ADD")
+    border:SetSize(64, 64)
+    border:SetPoint("CENTER", holder, "CENTER", 0, 0)
+    border:SetVertexColor(1, 0.68, 0.15)
+    border:SetAlpha(0.7)
+
+    local glow = holder:CreateTexture(nil, "OVERLAY")
+    glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    glow:SetBlendMode("ADD")
+    glow:SetPoint("CENTER", holder, "CENTER", 0, 0)
+    glow:SetSize(70, 70)
+    glow:SetVertexColor(1, 0.72, 0.25)
+    glow:SetAlpha(0.28)
+
+    holder.glow = glow
+    holder.border = border
+    holder:Hide()
+    return holder
+end
+local shoutIcon = createReminder(6673, "Interface\\Icons\\Ability_Warrior_BattleShout", -26)
+local stanceIcon = createReminder(71, "Interface\\Icons\\Ability_Warrior_DefensiveStance", 26)
+
+local pulseTime = 0
+frame:SetScript("OnUpdate", function(_, elapsed)
+    pulseTime = pulseTime + elapsed
+    local pulse = 0.46 + 0.3 * math.sin(pulseTime * 4.5)
+    if shoutIcon:IsShown() then
+        shoutIcon.border:SetAlpha(pulse)
+        shoutIcon.glow:SetAlpha(pulse * 0.64)
+    end
+    if stanceIcon:IsShown() then
+        stanceIcon.border:SetAlpha(pulse)
+        stanceIcon.glow:SetAlpha(pulse * 0.64)
+    end
+end)
 
 local function hasAuras()
     -- Aura values can become 'secret' in combat on Forever. Deliberately scan only OOC.
@@ -151,44 +207,46 @@ local function refresh()
     if not db then return end
     inRaid = raidInstance()
     if not showFrame() then frame:Hide(); return end
-    frame:Show()
-    title:SetText("FOREVERCORE  ·  " .. string.upper(db.profile) .. "  ·  PRE-PULL")
+    -- Auras are secret/unreadable in combat in Forever. Hide rather than
+    -- display an unverified "missing" reminder.
     if InCombatLockdown and InCombatLockdown() then
         combat = true
-        status:SetText("|cff98a5b5In combat: buffcheck gepauzeerd|r")
+        frame:Hide()
         return
     end
     combat = false
     local aura = hasAuras()
-    local missing = {}
-    local level = (UnitLevel and UnitLevel("player")) or 60
-    if not readable(level) or type(level) ~= "number" then level = 60 end
-    if aura == nil then
-        status:SetText("|cffffbd69Buffs niet uitleesbaar in deze beta-build|r")
+    if not aura then frame:Hide(); return end
+    if not UnitClass or select(2, UnitClass("player")) ~= "WARRIOR" then
+        frame:Hide()
         return
     end
-    if db.checkFlask and level >= 50 and not aura.flask then missing[#missing + 1] = "FLASK" end
-    if db.checkFood and level >= 15 and not aura.food then missing[#missing + 1] = "FOOD" end
-    if UnitClass and select(2, UnitClass("player")) == "WARRIOR" then
-        if db.checkShout and not aura.shout then missing[#missing + 1] = "BATTLE SHOUT" end
-        if db.profile == "tank" then
-            local shield = shieldEquipped()
-            if shield == false then missing[#missing + 1] = "SHIELD" end
-            if knowsDefensiveStance(level) and GetShapeshiftForm then
-                local form = GetShapeshiftForm()
-                if readable(form) and type(form) == "number" and form ~= 2 then
-                    missing[#missing + 1] = "DEFENSIVE STANCE"
-                end
+
+    local showShout = db.checkShout and not aura.shout
+    local showStance = false
+    if db.profile == "tank" and GetShapeshiftForm then
+        local level = UnitLevel and UnitLevel("player") or 1
+        if readable(level) and type(level) == "number" and knowsDefensiveStance(level) then
+            local ok, form = pcall(GetShapeshiftForm)
+            if ok and readable(form) and type(form) == "number" and form ~= 2 then
+                showStance = true
             end
         end
     end
-    lastResult = missing
-    if #missing > 0 then
-        status:SetText("|cffff5656MISSING: " .. table.concat(missing, "  ·  ") .. "|r")
+
+    -- Keep them adjacent even if only one icon is showing.
+    if showShout and showStance then
+        shoutIcon:SetPoint("CENTER", frame, "CENTER", -26, 0)
+        stanceIcon:SetPoint("CENTER", frame, "CENTER", 26, 0)
     else
-        status:SetText("|cff62e6a4READY  ·  Flask / food / class checks OK|r")
+        shoutIcon:SetPoint("CENTER", frame, "CENTER", 0, 0)
+        stanceIcon:SetPoint("CENTER", frame, "CENTER", 0, 0)
     end
+    if showShout then shoutIcon:Show() else shoutIcon:Hide() end
+    if showStance then stanceIcon:Show() else stanceIcon:Hide() end
+    if showShout or showStance then frame:Show() else frame:Hide() end
 end
+
 local function position()
     frame:ClearAllPoints()
     frame:SetPoint("CENTER", UIParent, "CENTER", db.x, db.y)
@@ -196,6 +254,8 @@ end
 local function moveFrame()
     if InCombatLockdown and InCombatLockdown() then say("Verplaatsen kan alleen buiten combat."); return end
     frame:Show()
+    shoutIcon:Show()
+    stanceIcon:Show()
     frame:EnableMouse(true)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
@@ -209,6 +269,7 @@ local function moveFrame()
         self:EnableMouse(false)
         self:SetScript("OnDragStart", nil)
         self:SetScript("OnDragStop", nil)
+        refresh()
         say("Positie opgeslagen. Let op: SavedVariables zijn in sommige beta-builds defect.")
     end)
     say("Sleep het paneel met de linkermuisknop. Loslaten bewaart de positie.")
