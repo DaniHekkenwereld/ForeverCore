@@ -130,6 +130,20 @@ local function shieldEquipped()
     if not ok or not readable(equipLoc) then return nil end
     return equipLoc == "INVTYPE_SHIELD"
 end
+-- Defensive Stance is unlocked later in Classic-style leveling; avoid
+-- warning new Warriors about a stance they have not learned yet.
+local function knowsDefensiveStance(level)
+    if type(level) == "number" and level < 10 then return false end
+    if type(IsPlayerSpell) == "function" then
+        local ok, result = pcall(IsPlayerSpell, 71)
+        if ok and readable(result) and type(result) == "boolean" then return result end
+    end
+    if type(IsSpellKnown) == "function" then
+        local ok, result = pcall(IsSpellKnown, 71)
+        if ok and readable(result) and type(result) == "boolean" then return result end
+    end
+    return level >= 10
+end
 local function showFrame()
     return inRaid or db.showOutsideRaid
 end
@@ -160,7 +174,7 @@ local function refresh()
         if db.profile == "tank" then
             local shield = shieldEquipped()
             if shield == false then missing[#missing + 1] = "SHIELD" end
-            if GetShapeshiftForm then
+            if knowsDefensiveStance(level) and GetShapeshiftForm then
                 local form = GetShapeshiftForm()
                 if readable(form) and type(form) == "number" and form ~= 2 then
                     missing[#missing + 1] = "DEFENSIVE STANCE"
