@@ -1,4 +1,4 @@
--- ForeverCore 0.3.9-beta (WoW: Forever Beta / Camelot)
+-- ForeverCore 0.3.10-beta (WoW: Forever Beta / Camelot)
 -- Display and convenience only. Does not automate spells or bypass protected APIs.
 
 local FC = CreateFrame("Frame")
@@ -72,10 +72,9 @@ local function syncPlates()
     pendingPlateSync = false
 end
 
--- Compact icon-only reminders: no dialog, labels, headers or warning text.
--- The icon exists only when Battle Shout / Defensive Stance is missing.
+-- Compact icon-only Battle Shout reminder; no dialog, labels or stance alerts.
 local frame = CreateFrame("Frame", "ForeverCorePrepull", UIParent)
-frame:SetSize(110, 54)
+frame:SetSize(54, 54)
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, -195)
 frame:SetFrameStrata("HIGH")
 frame:EnableMouse(false)
@@ -105,10 +104,10 @@ local function iconTexture(spellID, fallback)
     end
     return fallback
 end
-local function createReminder(spellID, fallback, offset)
+local function createReminder(spellID, fallback)
     local holder = CreateFrame("Frame", nil, frame)
     holder:SetSize(44, 44)
-    holder:SetPoint("CENTER", frame, "CENTER", offset, 0)
+    holder:SetPoint("CENTER", frame, "CENTER", 0, 0)
 
     local icon = holder:CreateTexture(nil, "ARTWORK")
     icon:SetAllPoints(holder)
@@ -136,8 +135,7 @@ local function createReminder(spellID, fallback, offset)
     holder:Hide()
     return holder
 end
-local shoutIcon = createReminder(6673, "Interface\\Icons\\Ability_Warrior_BattleShout", -26)
-local stanceIcon = createReminder(71, "Interface\\Icons\\Ability_Warrior_DefensiveStance", 26)
+local shoutIcon = createReminder(6673, "Interface\\Icons\\Ability_Warrior_BattleShout")
 
 local pulseTime = 0
 frame:SetScript("OnUpdate", function(_, elapsed)
@@ -146,10 +144,6 @@ frame:SetScript("OnUpdate", function(_, elapsed)
     if shoutIcon:IsShown() then
         shoutIcon.border:SetAlpha(pulse)
         shoutIcon.glow:SetAlpha(pulse * 0.64)
-    end
-    if stanceIcon:IsShown() then
-        stanceIcon.border:SetAlpha(pulse)
-        stanceIcon.glow:SetAlpha(pulse * 0.64)
     end
 end)
 
@@ -186,20 +180,6 @@ local function shieldEquipped()
     if not ok or not readable(equipLoc) then return nil end
     return equipLoc == "INVTYPE_SHIELD"
 end
--- Defensive Stance is unlocked later in Classic-style leveling; avoid
--- warning new Warriors about a stance they have not learned yet.
-local function knowsDefensiveStance(level)
-    if type(level) == "number" and level < 10 then return false end
-    if type(IsPlayerSpell) == "function" then
-        local ok, result = pcall(IsPlayerSpell, 71)
-        if ok and readable(result) and type(result) == "boolean" then return result end
-    end
-    if type(IsSpellKnown) == "function" then
-        local ok, result = pcall(IsSpellKnown, 71)
-        if ok and readable(result) and type(result) == "boolean" then return result end
-    end
-    return level >= 10
-end
 local function showFrame()
     return inRaid or db.showOutsideRaid
 end
@@ -207,14 +187,11 @@ local function refresh()
     if not db then return end
     inRaid = raidInstance()
     if not showFrame() then frame:Hide(); return end
-    -- Auras are secret/unreadable in combat in Forever. Hide rather than
-    -- display an unverified "missing" reminder.
+    -- Combat aura data can be protected; never claim a missing buff when unreadable.
     if InCombatLockdown and InCombatLockdown() then
-        combat = true
         frame:Hide()
         return
     end
-    combat = false
     local aura = hasAuras()
     if not aura then frame:Hide(); return end
     if not UnitClass or select(2, UnitClass("player")) ~= "WARRIOR" then
@@ -222,33 +199,16 @@ local function refresh()
         return
     end
 
-    local showShout = db.checkShout and not aura.shout
-    local showStance = false
-    if db.profile == "tank" and GetShapeshiftForm then
-        local level = UnitLevel and UnitLevel("player") or 1
-        if readable(level) and type(level) == "number" and knowsDefensiveStance(level) then
-            local ok, form = pcall(GetShapeshiftForm)
-            if ok and readable(form) and type(form) == "number" and form ~= 2 then
-                showStance = true
-            end
-        end
-    end
-
-    -- Keep them adjacent even if only one icon is showing.
-    shoutIcon:ClearAllPoints()
-    stanceIcon:ClearAllPoints()
-    if showShout and showStance then
-        shoutIcon:SetPoint("CENTER", frame, "CENTER", -26, 0)
-        stanceIcon:SetPoint("CENTER", frame, "CENTER", 26, 0)
+    -- Only Battle Shout: show the icon if the buff is missing, hide if present.
+    local missingShout = db.checkShout and not aura.shout
+    if missingShout then
+        shoutIcon:Show()
+        frame:Show()
     else
-        shoutIcon:SetPoint("CENTER", frame, "CENTER", 0, 0)
-        stanceIcon:SetPoint("CENTER", frame, "CENTER", 0, 0)
+        shoutIcon:Hide()
+        frame:Hide()
     end
-    if showShout then shoutIcon:Show() else shoutIcon:Hide() end
-    if showStance then stanceIcon:Show() else stanceIcon:Hide() end
-    if showShout or showStance then frame:Show() else frame:Hide() end
 end
-
 local function position()
     frame:ClearAllPoints()
     frame:SetPoint("CENTER", UIParent, "CENTER", db.x, db.y)
@@ -257,7 +217,6 @@ local function moveFrame()
     if InCombatLockdown and InCombatLockdown() then say("Verplaatsen kan alleen buiten combat."); return end
     frame:Show()
     shoutIcon:Show()
-    stanceIcon:Show()
     frame:EnableMouse(true)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
@@ -274,7 +233,7 @@ local function moveFrame()
         refresh()
         say("Positie opgeslagen. Let op: SavedVariables zijn in sommige beta-builds defect.")
     end)
-    say("Sleep de iconen met de linkermuisknop. Loslaten bewaart de positie.")
+    say("Sleep het Battle Shout-icoon met de linkermuisknop. Loslaten bewaart de positie.")
 end
 
 -- Each entry is a regular WoW macro. A user keypress is always required.
