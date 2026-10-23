@@ -19,24 +19,92 @@ local desiredCVars = {
 }
 local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 
--- Four modifier-organized actionbar rows for all characters.
--- Bind keys to four Blizzard bars, not reposition the physical bars.
--- The Right bar stays vertical unless changed separately in Edit Mode.
--- G and MOUSEWHEELDOWN remain dedicated Warrior abilities for Warriors.
--- SHIFT-SPACE was inferred from 'SSP' on the original screenshot; verify in client.
-local starterRevision = "modifier-rows-20261023-v2"
+-- Ergonomic 4-layer preset: same 12 physical keys in the same 12 slots.
+-- Rows 1/2/3/4 use no modifier, Shift, Alt and Shift+Alt.
+-- No WASD, Tab, Space, G, or dedicated Warrior mouse keys are remapped.
+-- Right Action Bar is still vertical in Blizzard's default layout.
+local starterRevision = "ergonomic-4layer-20261023-v3"
+local baseKeys = {"1", "2", "3", "4", "Q", "E", "R", "F", "Z", "X", "C", "V"}
 local starterRows = {
-    {label = "Rij 1 / Main: gewone toetsen (basis)", prefix = "ACTIONBUTTON", keys = {"1", "2", "3", "6", "Q", "R", "Z"}},
-    {label = "Rij 2 / Bottom Left: overige gewone toetsen", prefix = "MULTIACTIONBAR1BUTTON", keys = {"F", "C", "T", "V", "G", "MOUSEWHEELDOWN"}},
-    {label = "Rij 3 / Bottom Right: alle Shift-toetsen", prefix = "MULTIACTIONBAR2BUTTON", keys = {"SHIFT-C", "SHIFT-SPACE", "SHIFT-V", "SHIFT-X", "SHIFT-E", "SHIFT-2"}},
-    {label = "Rij 4 / Right Bar: alle Alt-toetsen", prefix = "MULTIACTIONBAR3BUTTON", keys = {"ALT-P", "ALT-E", "ALT-2", "ALT-G", "ALT-T", "ALT-R", "ALT-F", "ALT-V", "ALT-3", "ALT-X"}},
+    {label = "Rij 1 / Main - normale toetsen", prefix = "ACTIONBUTTON", modifier = ""},
+    {label = "Rij 2 / Bottom Left - Shift", prefix = "MULTIACTIONBAR1BUTTON", modifier = "SHIFT-"},
+    {label = "Rij 3 / Bottom Right - Alt", prefix = "MULTIACTIONBAR2BUTTON", modifier = "ALT-"},
+    {label = "Rij 4 / Right Bar - Shift+Alt", prefix = "MULTIACTIONBAR3BUTTON", modifier = "ALT-SHIFT-"},
 }
 local screenshotBindings = {}
 for _, row in ipairs(starterRows) do
-    for index, key in ipairs(row.keys) do
-        screenshotBindings[#screenshotBindings + 1] = {key, row.prefix .. index}
+    for index, key in ipairs(baseKeys) do
+        screenshotBindings[#screenshotBindings + 1] = {row.modifier .. key, row.prefix .. index}
     end
 end
+
+-- Legacy bindings are removed only during an addon-presets migration,
+-- and only when their current action still matches the earlier preset.
+-- Manually changed bindings are preserved.
+local legacyStarterBindings = {
+    ["modifier-rows-20261023-v2"] = {
+        {"1", "ACTIONBUTTON1"},
+        {"2", "ACTIONBUTTON2"},
+        {"3", "ACTIONBUTTON3"},
+        {"6", "ACTIONBUTTON4"},
+        {"Q", "ACTIONBUTTON5"},
+        {"R", "ACTIONBUTTON6"},
+        {"Z", "ACTIONBUTTON7"},
+        {"F", "MULTIACTIONBAR1BUTTON1"},
+        {"C", "MULTIACTIONBAR1BUTTON2"},
+        {"T", "MULTIACTIONBAR1BUTTON3"},
+        {"V", "MULTIACTIONBAR1BUTTON4"},
+        {"G", "MULTIACTIONBAR1BUTTON5"},
+        {"MOUSEWHEELDOWN", "MULTIACTIONBAR1BUTTON6"},
+        {"SHIFT-C", "MULTIACTIONBAR2BUTTON1"},
+        {"SHIFT-SPACE", "MULTIACTIONBAR2BUTTON2"},
+        {"SHIFT-V", "MULTIACTIONBAR2BUTTON3"},
+        {"SHIFT-X", "MULTIACTIONBAR2BUTTON4"},
+        {"SHIFT-E", "MULTIACTIONBAR2BUTTON5"},
+        {"SHIFT-2", "MULTIACTIONBAR2BUTTON6"},
+        {"ALT-P", "MULTIACTIONBAR3BUTTON1"},
+        {"ALT-E", "MULTIACTIONBAR3BUTTON2"},
+        {"ALT-2", "MULTIACTIONBAR3BUTTON3"},
+        {"ALT-G", "MULTIACTIONBAR3BUTTON4"},
+        {"ALT-T", "MULTIACTIONBAR3BUTTON5"},
+        {"ALT-R", "MULTIACTIONBAR3BUTTON6"},
+        {"ALT-F", "MULTIACTIONBAR3BUTTON7"},
+        {"ALT-V", "MULTIACTIONBAR3BUTTON8"},
+        {"ALT-3", "MULTIACTIONBAR3BUTTON9"},
+        {"ALT-X", "MULTIACTIONBAR3BUTTON10"},
+    },
+    ["screenshot-20261023-v1"] = {
+        {"1", "ACTIONBUTTON1"},
+        {"2", "ACTIONBUTTON2"},
+        {"3", "ACTIONBUTTON3"},
+        {"R", "ACTIONBUTTON4"},
+        {"MOUSEWHEELDOWN", "ACTIONBUTTON5"},
+        {"Z", "ACTIONBUTTON6"},
+        {"ALT-P", "ACTIONBUTTON8"},
+        {"6", "ACTIONBUTTON9"},
+        {"F", "MULTIACTIONBAR1BUTTON1"},
+        {"C", "MULTIACTIONBAR1BUTTON2"},
+        {"G", "MULTIACTIONBAR1BUTTON3"},
+        {"Q", "MULTIACTIONBAR1BUTTON4"},
+        {"T", "MULTIACTIONBAR1BUTTON5"},
+        {"V", "MULTIACTIONBAR1BUTTON6"},
+        {"ALT-E", "MULTIACTIONBAR1BUTTON8"},
+        {"ALT-2", "MULTIACTIONBAR1BUTTON9"},
+        {"ALT-G", "MULTIACTIONBAR1BUTTON10"},
+        {"SHIFT-C", "MULTIACTIONBAR2BUTTON2"},
+        {"SHIFT-SPACE", "MULTIACTIONBAR2BUTTON4"},
+        {"SHIFT-V", "MULTIACTIONBAR2BUTTON5"},
+        {"SHIFT-X", "MULTIACTIONBAR2BUTTON6"},
+        {"SHIFT-E", "MULTIACTIONBAR2BUTTON7"},
+        {"ALT-T", "MULTIACTIONBAR2BUTTON8"},
+        {"ALT-R", "MULTIACTIONBAR2BUTTON9"},
+        {"ALT-F", "MULTIACTIONBAR2BUTTON10"},
+        {"ALT-V", "MULTIACTIONBAR2BUTTON11"},
+        {"SHIFT-2", "MULTIACTIONBAR2BUTTON12"},
+        {"ALT-3", "MULTIACTIONBAR3BUTTON1"},
+        {"ALT-X", "MULTIACTIONBAR3BUTTON2"},
+    },
+}
 local warriorStarter = {
     {"BUTTON4", "SHAPESHIFTBUTTON1"},    -- Battle Stance
     {"BUTTON5", "SHAPESHIFTBUTTON2"},    -- Defensive Stance
@@ -217,7 +285,25 @@ local function setKey(key, command)
     local ok, result = pcall(SetBinding, key, command)
     return ok and result ~= nil and result ~= false
 end
-local function writeBindings(desired, clearExisting, saveMode)
+local function removeLegacyPresetBindings(previousRevision, desired)
+    local old = legacyStarterBindings[previousRevision]
+    if not old or type(GetBindingAction) ~= "function" then return true end
+    local kept = {}
+    for _, entry in ipairs(desired) do kept[entry[1]] = true end
+    for _, entry in ipairs(old) do
+        local key, expectedAction = entry[1], entry[2]
+        if not kept[key] then
+            local ok, actualAction = pcall(GetBindingAction, key)
+            if ok and actualAction == expectedAction then
+                if not setKey(key, nil) then
+                    return false, "old preset cleanup: " .. key
+                end
+            end
+        end
+    end
+    return true
+end
+local function writeBindings(desired, clearExisting, saveMode, previousPreset)
     if locked() then return false, "in combat" end
     if type(SaveBindings) ~= "function" then return false, "SaveBindings unavailable" end
     local active = collect()
@@ -226,6 +312,10 @@ local function writeBindings(desired, clearExisting, saveMode)
         for _, pair in ipairs(active) do
             if not setKey(pair[1], nil) then return false, "clear " .. pair[1] end
         end
+    end
+    if previousPreset then
+        local cleaned, reason = removeLegacyPresetBindings(previousPreset, desired)
+        if not cleaned then return false, reason end
     end
     for _, pair in ipairs(desired) do
         if not setKey(pair[1], pair[2]) then return false, "bind " .. pair[1] end
@@ -293,13 +383,13 @@ local function applyBindings(force)
     if not s.backups[guid] then
         s.backups[guid] = {keys = current, mode = 2}
     end
-    local ok, reason = writeBindings(target, captured and sameClass, 2)
+    local ok, reason = writeBindings(target, captured and sameClass, 2, starter and s.applied[guid] or nil)
     running = false
     if ok then
         s.applied[guid] = revision
         if s.excluded then s.excluded[guid] = nil end
         if starter then
-            say("Modifier-rij keybinds ingesteld: " .. #target .. " toetsen ("
+            say("Ergonomische keybind-layout ingesteld: " .. #target .. " toetsen ("
                 .. (characterClass == "WARRIOR" and "incl. Warrior stance/mouse binds" or "algemeen")
                 .. "); overige toetsen blijven staan.")
         else
@@ -343,7 +433,7 @@ local function status()
     if not s then return end
     local p = s.profile
     say("Setup: CVars " .. (s.autoCVars and "aan" or "uit") .. ", keybind-sync " .. (s.autoBindings and "aan" or "uit")
-        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "ingebouwde modifier-rijen (geen hoofdchar nodig)") .. ".")
+        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "ergonomische 4-layer layout (geen hoofdchar nodig)") .. ".")
     local bars = "onbekend"
     if type(GetActionBarToggles) == "function" then
         local ok, a, b, c, d = pcall(GetActionBarToggles)
@@ -359,12 +449,16 @@ local function status()
         .. ", afstand=" .. tostring(getCVar("nameplateMaxDistance")) .. " (effectieve servercap kan lager zijn).")
 end
 local function printStarterLayout()
-    say("Vier modifier-rijen; " .. #screenshotBindings .. " actionbar hotkeys.")
+    say("4 symmetrische keybind-rijen: 12 dezelfde basistoetsen per rij (48 slots).")
     for _, row in ipairs(starterRows) do
-        say(row.label .. ": " .. table.concat(row.keys, ", "))
+        local keys = {}
+        for _, base in ipairs(baseKeys) do
+            keys[#keys + 1] = row.modifier .. base
+        end
+        say(row.label .. ": " .. table.concat(keys, ", "))
     end
-    say("Warrior: G=Berserker, WD=Heroic Strike, WU=Cleave, midden=Taunt, muis 4/5=Battle/Defensive.")
-    say("Rij 4 is standaard de verticale Right Action Bar; de addon verplaatst geen balken.")
+    say("Warrior: G Berserker / muis 4-5 stances / midden Taunt / wiel down Heroic Strike / wiel up Cleave.")
+    say("Rij 4 is de standaard verticale Right Bar; addon verandert geen balkpositie.")
 end
 function FC:SetupCommand(raw)
     local command, option = tostring(raw or ""):lower():match("^%s*(%S*)%s*(%S*)")
