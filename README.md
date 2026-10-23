@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.4-beta
+## Included in v0.3.5-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -28,57 +28,57 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
      Openers.lua
      Recorder.lua
      AccountSetup.lua
-     Recorder.lua
    ```
 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
 3. Launch WoW Forever, enable **ForeverCore** on the AddOns screen and run `/fc help`.
 
-## Fresh-character keybinds (v0.3.4) — no main required
+## Fresh-character keybinds (v0.3.5) — four modifier-based rows
 
-The addon applies a **built-in keybind preset** on each character's first login, whatever its name or class. This preset is derived from the actionbar screenshot provided on 2026-10-23. It contains **29 readable actionbar hotkeys** plus **6 existing Warrior-specific bindings** (G and mousewheel down overlap, and Warrior-specific mappings take precedence). Any unreadable/covered labels were **deliberately omitted**, rather than guessed. Existing unrelated keybinds remain untouched. The preset revision will also update older characters using the earlier starter preset.
+On the **first login of every character**, ForeverCore applies the built-in 29-key layout below. You do not need an existing main character or to capture keybinds first. The preset also updates previously imported layouts because its revision has changed. It keeps unrelated keys and stores a per-character backup.
 
-### Screenshot hotkey layout (assumed actionbar rows)
+| Row | Blizzard action bar | Keys in slot order |
+| --- | --- | --- |
+| **1: Regular** | Main | `1`, `2`, `3`, `6`, `Q`, `R`, `Z` |
+| **2: Regular** | Bottom Left | `F`, `C`, `T`, `V`, `G`, `Mousewheel Down` |
+| **3: Shift** | Bottom Right | `Shift-C`, `Shift-Space`, `Shift-V`, `Shift-X`, `Shift-E`, `Shift-2` |
+| **4: Alt** | Right | `Alt-P`, `Alt-E`, `Alt-2`, `Alt-G`, `Alt-T`, `Alt-R`, `Alt-F`, `Alt-V`, `Alt-3`, `Alt-X` |
 
-The screenshot shows three rows, but **cannot identify their actual Blizzard actionbar IDs**. We currently assume row 1 = Main Action Bar, row 2 = Bottom Left, row 3 = Bottom Right; two extra hotkeys at the end of row 3 use the first two buttons of Right Action Bar.
+**Important:** This is a **binding layout**, not a custom visual arrangement. Row 4 uses Blizzard's **Right Action Bar**, which is vertical in the default UI; ForeverCore does not reposition it into a horizontal fourth row. The bars must be enabled and supported by the current game build.
 
-| Screenshot row / bar | Mapped keys in displayed order |
+### Warrior overrides (unchanged)
+
+| Key | Warrior action |
 | --- | --- |
-| Top / Main | `1`, `2`, `3`, `R`, `WD` (mousewheel down), `Z`, **unknown**, `Alt-P`, `6` |
-| Middle / Bottom Left | `F`, `C`, `G`, `Q`, `T`, `V`, **unknown**, `Alt-E`, `Alt-2`, `Alt-G` |
-| Bottom / Bottom Right | **unknown**, `Shift-C`, **unknown**, `Shift-Space` (reads as SSP), `Shift-V`, `Shift-X`, `Shift-E`, `Alt-T`, `Alt-R`, `Alt-F`, `Alt-V`, `Shift-2` |
-| Last two icons / Right bar | `Alt-3`, `Alt-X` |
-
-The screenshot also contains large cooldown countdown labels (e.g., 6m, 49, 50, 101). **Those are not treated as keybinds.** Some binds may be hidden behind cooldown text. The inferred `SSP = Shift-Space` needs an in-game check.
-
-### Existing Warrior keybind overrides
-
-| Key | Warrior-specific action |
-| --- | --- |
-| Mouse side button 1 (`BUTTON4`) | Battle Stance |
-| Mouse side button 2 (`BUTTON5`) | Defensive Stance |
-| `G` | Berserker Stance, *not* the screenshot's Middle-row button 3 |
+| Side mouse button 1 (`BUTTON4`) | Battle Stance |
+| Side mouse button 2 (`BUTTON5`) | Defensive Stance |
+| `G` | Berserker Stance |
 | Middle mouse (`BUTTON3`) | Taunt |
-| Wheel down (`MOUSEWHEELDOWN`) | Heroic Strike, *not* the screenshot's Top-row button 5 |
-| Wheel up (`MOUSEWHEELUP`) | Cleave |
+| Wheel down | Heroic Strike |
+| Wheel up | Cleave |
 
-The screenshot actionbar hotkeys apply on **all classes**, but direct Warrior spells and stance bindings only apply to Warriors. For non-Warriors, `G` and wheel down operate their mapped actionbar buttons as in the screenshot. Mouse button numbering and direct spell binding should be verified on the actual Forever client.
+For Warriors, `G` and Wheel Down **do not also activate** the Bottom Left slots; these actionbar hotkeys are overridden by the dedicated Warrior mappings. Other classes receive those two regular row-2 hotkeys. Physical mouse side button numbering may vary by hardware. The screenshot label `SSP` was tentatively interpreted as Shift-Space and still needs in-client verification.
 
-Run `/fc setup layout` to print the mapping or `/fc setup status` to inspect your configured options. `/fc setup apply` reapplies the preset; `/fc setup restore` restores the prior per-character bindings and disables auto-import for that character. You can optionally `/fc setup capture` later to save a fully custom account-wide profile; it takes priority over the built-in preset.
+### Commands and behavior
 
-### Automatic game settings
+- `/fc setup layout`: display the four key groups and Warrior exceptions.
+- `/fc setup status`: inspect the applied settings.
+- `/fc setup apply`: reapply the current preset outside combat.
+- `/fc setup restore`: restore the saved bindings for this character and prevent subsequent auto-import until explicitly reapplied.
+- `/fc setup capture`: optionally save a custom full-profile set after you have configured a character; **it overrides** the built-in preset on future logins.
+- `/fc setup bindings on/off`, `/fc setup settings on/off`, `/fc setup bars on/off`: manage the automatic behavior.
+
+The addon binds keys to actionbar button **slots**; it does not assign spells to those slots, move bars or copy talents. Everything is applied outside combat, and actual API support must still be verified in the Forever client.
+
+### Automatic game settings (all characters)
 
 | Setting | Requested value |
 | --- | --- |
 | Auto loot | On |
-| Enemy and friendly nameplates | On (subject to restrictions) |
+| Friendly and enemy nameplates | On where supported |
 | Always show nameplates | On |
-| Nameplate range | Request 60 yards, server may limit it |
-| Bottom Left, Bottom Right, Right 1, Right 2 action bars | All visible |
-
-The addon only changes bindings/settings out of combat, saves the previous keybinding state for restoration, and does not copy actionbar **spell contents** or an edited layout/position. A Blizzard default actionbar may not be arranged like the screenshot, even though the bind commands are attached to its slots. Actual Forever beta compatibility is still unverified.
-
-Commands: `/fc setup layout`, `/fc setup status`, `/fc setup capture`, `/fc setup apply`, `/fc setup restore`, `/fc setup bindings on/off`, `/fc setup settings on/off`, `/fc setup bars on/off`.
+| Nameplate range | Request 60 yards (server cap may be lower) |
+| Bottom Left, Bottom Right, Right 1 and Right 2 | Show all |
 
 ## Commands
 
@@ -86,7 +86,7 @@ Commands: `/fc setup layout`, `/fc setup status`, `/fc setup capture`, `/fc setu
 | --- | --- |
 | `/fc help` | Show available commands |
 | `/fc setup` | Show account setup commands |
-| `/fc setup layout` | List screenshot-derived actionbar keys and Warrior overrides |
+| `/fc setup layout` | List modifier-grouped rows 1–4 and Warrior overrides |
 | `/fc setup capture` | Optionally capture a full custom keybind profile; not required initially |
 | `/fc setup status` | Show whether profile / client options are active |
 | `/fc check` | Run the pre-pull check again (out of combat) |
