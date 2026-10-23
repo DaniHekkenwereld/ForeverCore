@@ -21,6 +21,7 @@ function FC:GetDatabase() return db end
 local inRaid = false
 local pendingPlateSync = false
 local lastPlates = nil
+local plateWriteBlocked = false -- beta may reject this CVar; avoid spamming writes
 local lastResult = {}
 local combat = false
 
@@ -56,7 +57,7 @@ local function setCVarValue(key, value)
     return ok and getCVarValue(key) == value
 end
 local function syncPlates()
-    if not db then return end
+    if not db or plateWriteBlocked then return end
     if InCombatLockdown and InCombatLockdown() then
         pendingPlateSync = true
         return
@@ -65,7 +66,10 @@ local function syncPlates()
     local value = desired and "1" or "0"
     if lastPlates ~= value or getCVarValue("nameplateShowFriends") ~= value then
         if not setCVarValue("nameplateShowFriends", value) then
-            say("Nameplate-CVar wordt niet toegepast. Probeer Shift+V in-game; Forever beta kan writes weigeren.")
+            plateWriteBlocked = true
+            say("Forever beta weigert nameplate-CVar. Geen verdere automatische pogingen; pas dit aan via de gameopties.")
+            pendingPlateSync = false
+            return
         end
         lastPlates = value
     end
@@ -327,6 +331,7 @@ local function handle(line)
     elseif arg == "plates" and (val == "auto" or val == "on" or val == "off") then
         db.plateMode = val
         lastPlates = nil
+        plateWriteBlocked = false -- manual user request may try again
         syncPlates()
         say("Friendly nameplates: " .. val)
     elseif arg == "mode" and (val == "tank" or val == "fury" or val == "arms") then
