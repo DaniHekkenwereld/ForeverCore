@@ -19,60 +19,24 @@ local desiredCVars = {
 }
 local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 
--- The user's established Warrior keybinds, not a guessed full layout.
--- BUTTON4/BUTTON5 assume the two mouse thumb buttons; edit if hardware differs.
--- Direct SPELL bindings work independently of action-bar slot placement.
--- Stance bar commands use the standard Warrior stance order.
--- Screenshot from 2026-10-23. Three displayed rows are interpreted as
--- Main bar, Bottom Left bar, Bottom Right bar; the last two visible keys
--- overflow onto the first two slots of the Right bar.
--- Screenshot does NOT identify the underlying action bar IDs, so check
--- the row/bar mapping in game before treating placement as exact.
--- Unreadable labels and cooldown counters are intentionally left unmapped.
-local screenshotRevision = "screenshot-20261023-v1"
-local screenshotBindings = {
-    -- Top row: Main Action Bar
-    {"1", "ACTIONBUTTON1"},
-    {"2", "ACTIONBUTTON2"},
-    {"3", "ACTIONBUTTON3"},
-    {"R", "ACTIONBUTTON4"},
-    {"MOUSEWHEELDOWN", "ACTIONBUTTON5"}, -- WD label; Warriors keep Heroic Strike
-    {"Z", "ACTIONBUTTON6"},
-    -- Slot 7 unreadable/empty.
-    {"ALT-P", "ACTIONBUTTON8"},
-    {"6", "ACTIONBUTTON9"},
-    -- Remaining top-row hotkey labels look like cooldown timers: skipped.
-
-    -- Second row: Bottom Left bar (Blizzard MultiActionBar1)
-    {"F", "MULTIACTIONBAR1BUTTON1"},
-    {"C", "MULTIACTIONBAR1BUTTON2"},
-    {"G", "MULTIACTIONBAR1BUTTON3"}, -- Warriors keep Berserker Stance on G
-    {"Q", "MULTIACTIONBAR1BUTTON4"},
-    {"T", "MULTIACTIONBAR1BUTTON5"},
-    {"V", "MULTIACTIONBAR1BUTTON6"},
-    -- Slot 7 is showing a cooldown counter.
-    {"ALT-E", "MULTIACTIONBAR1BUTTON8"},
-    {"ALT-2", "MULTIACTIONBAR1BUTTON9"},
-    {"ALT-G", "MULTIACTIONBAR1BUTTON10"},
-
-    -- Third row: Bottom Right bar (Blizzard MultiActionBar2)
-    -- Slots 1 and 3 show large cooldown overlays: no reliable hotkey.
-    {"SHIFT-C", "MULTIACTIONBAR2BUTTON2"},
-    {"SHIFT-SPACE", "MULTIACTIONBAR2BUTTON4"}, -- SSP = Shift-Space (verify)
-    {"SHIFT-V", "MULTIACTIONBAR2BUTTON5"},
-    {"SHIFT-X", "MULTIACTIONBAR2BUTTON6"},
-    {"SHIFT-E", "MULTIACTIONBAR2BUTTON7"},
-    {"ALT-T", "MULTIACTIONBAR2BUTTON8"},
-    {"ALT-R", "MULTIACTIONBAR2BUTTON9"},
-    {"ALT-F", "MULTIACTIONBAR2BUTTON10"},
-    {"ALT-V", "MULTIACTIONBAR2BUTTON11"},
-    {"SHIFT-2", "MULTIACTIONBAR2BUTTON12"},
-
-    -- Two trailing icons beyond the 12-slot third row: Right bar
-    {"ALT-3", "MULTIACTIONBAR3BUTTON1"},
-    {"ALT-X", "MULTIACTIONBAR3BUTTON2"},
+-- Four modifier-organized actionbar rows for all characters.
+-- Bind keys to four Blizzard bars, not reposition the physical bars.
+-- The Right bar stays vertical unless changed separately in Edit Mode.
+-- G and MOUSEWHEELDOWN remain dedicated Warrior abilities for Warriors.
+-- SHIFT-SPACE was inferred from 'SSP' on the original screenshot; verify in client.
+local starterRevision = "modifier-rows-20261023-v2"
+local starterRows = {
+    {label = "Rij 1 / Main: gewone toetsen (basis)", prefix = "ACTIONBUTTON", keys = {"1", "2", "3", "6", "Q", "R", "Z"}},
+    {label = "Rij 2 / Bottom Left: overige gewone toetsen", prefix = "MULTIACTIONBAR1BUTTON", keys = {"F", "C", "T", "V", "G", "MOUSEWHEELDOWN"}},
+    {label = "Rij 3 / Bottom Right: alle Shift-toetsen", prefix = "MULTIACTIONBAR2BUTTON", keys = {"SHIFT-C", "SHIFT-SPACE", "SHIFT-V", "SHIFT-X", "SHIFT-E", "SHIFT-2"}},
+    {label = "Rij 4 / Right Bar: alle Alt-toetsen", prefix = "MULTIACTIONBAR3BUTTON", keys = {"ALT-P", "ALT-E", "ALT-2", "ALT-G", "ALT-T", "ALT-R", "ALT-F", "ALT-V", "ALT-3", "ALT-X"}},
 }
-local starterRevision = screenshotRevision
+local screenshotBindings = {}
+for _, row in ipairs(starterRows) do
+    for index, key in ipairs(row.keys) do
+        screenshotBindings[#screenshotBindings + 1] = {key, row.prefix .. index}
+    end
+end
 local warriorStarter = {
     {"BUTTON4", "SHAPESHIFTBUTTON1"},    -- Battle Stance
     {"BUTTON5", "SHAPESHIFTBUTTON2"},    -- Defensive Stance
@@ -335,7 +299,7 @@ local function applyBindings(force)
         s.applied[guid] = revision
         if s.excluded then s.excluded[guid] = nil end
         if starter then
-            say("Screenshot-keybinds ingesteld: " .. #target .. " toetsen ("
+            say("Modifier-rij keybinds ingesteld: " .. #target .. " toetsen ("
                 .. (characterClass == "WARRIOR" and "incl. Warrior stance/mouse binds" or "algemeen")
                 .. "); overige toetsen blijven staan.")
         else
@@ -379,7 +343,7 @@ local function status()
     if not s then return end
     local p = s.profile
     say("Setup: CVars " .. (s.autoCVars and "aan" or "uit") .. ", keybind-sync " .. (s.autoBindings and "aan" or "uit")
-        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "ingebouwde screenshot-layout (geen hoofdchar nodig)") .. ".")
+        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "ingebouwde modifier-rijen (geen hoofdchar nodig)") .. ".")
     local bars = "onbekend"
     if type(GetActionBarToggles) == "function" then
         local ok, a, b, c, d = pcall(GetActionBarToggles)
@@ -395,12 +359,12 @@ local function status()
         .. ", afstand=" .. tostring(getCVar("nameplateMaxDistance")) .. " (effectieve servercap kan lager zijn).")
 end
 local function printStarterLayout()
-    say("Screenshot keybind preset (" .. #screenshotBindings .. " bindings; 3 rows + 2 overflow):")
-    say("Main: 1, 2, 3, R, WD, Z, [unknown], Alt-P, 6")
-    say("Bottom Left: F, C, G, Q, T, V, [unknown], Alt-E, Alt-2, Alt-G")
-    say("Bottom Right: [unknown], Shift-C, [unknown], Shift-Space, Shift-V, Shift-X, Shift-E, Alt-T, Alt-R, Alt-F, Alt-V, Shift-2")
-    say("Right bar: Alt-3, Alt-X. Warrior override: G=Berserker, WD=Heroic Strike; mouse 4/5, middle, wheel up kept.")
-    say("Assumed row-to-bar positions; screenshot does not show which Blizzard bar each row belongs to.")
+    say("Vier modifier-rijen; " .. #screenshotBindings .. " actionbar hotkeys.")
+    for _, row in ipairs(starterRows) do
+        say(row.label .. ": " .. table.concat(row.keys, ", "))
+    end
+    say("Warrior: G=Berserker, WD=Heroic Strike, WU=Cleave, midden=Taunt, muis 4/5=Battle/Defensive.")
+    say("Rij 4 is standaard de verticale Right Action Bar; de addon verplaatst geen balken.")
 end
 function FC:SetupCommand(raw)
     local command, option = tostring(raw or ""):lower():match("^%s*(%S*)%s*(%S*)")
