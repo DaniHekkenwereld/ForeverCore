@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.9-beta — 2026-10-23
+
+- Replaced 438x100 black text pre-pull dialog with **two 44x44 spell artwork icons**, Battle Shout and Defensive Stance.
+- Icons are shown only for missing conditions and pulse with a compact amber glow; when both are satisfied no UI is visible.
+- Defensive Stance icon only appears on tank profile once the stance is learnable; no extra alerts for offensive cooldowns.
+- Preserved `/fc move` with a temporary icon preview for dragging. Saved position retained from prior versions.
+- Hide reminders when client auras are protected/unreadable or while combat information cannot be safely determined.
+- The existing flask/food detection remains in the code but is intentionally not rendered in this minimalist reminder.
+- WoW Forever client verification pending.
+
+
 ## 0.3.8-beta — 2026-10-23
 
 - Beta screenshot confirmed pre-pull HUD loads, regular and modified bars are visible, but old secondary bindings (e.g. main slot 5's old `5`) remain next to the new `Q` assignment.
