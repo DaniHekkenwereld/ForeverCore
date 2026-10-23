@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.6-beta — 2026-10-23
+
+- Rebuilt the screenshot-derived keybind preset into **four identical 12-key patterns**: no modifier, Shift, Alt, Alt+Shift.
+- Each layer uses `1 2 3 4 Q E R F Z X C V`, yielding 48 actionbar bindings across Main, Bottom Left, Bottom Right and Right.
+- Kept G, mouse-side Battle/Defensive Stance buttons, middle-mouse Taunt, and mousewheel Heroic Strike/Cleave dedicated to Warriors.
+- Added guarded cleanup of old 0.3.4 / 0.3.5 preset bindings, clearing only unchanged legacy mappings while keeping manually edited bindings.
+- Updated `/fc setup layout`; normal Blizzard Right Action Bar remains vertical.
+- Real WoW Forever client tests pending; check Alt+Shift key handling and OS input-language shortcuts.
+
+
 ## 0.3.5-beta — 2026-10-23
 
 - Reorganized all 29 screenshot-derived actionbar hotkeys into four consistent groups: unmodified keys on the Main and Bottom Left bars, Shift-only on Bottom Right, Alt-only on Right.
