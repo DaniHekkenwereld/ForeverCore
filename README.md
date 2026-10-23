@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.5-beta
+## Included in v0.3.6-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -33,33 +33,49 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
 3. Launch WoW Forever, enable **ForeverCore** on the AddOns screen and run `/fc help`.
 
-## Fresh-character keybinds (v0.3.5) — four modifier-based rows
+## Fresh-character keybinds (v0.3.6) — mirrored 4-layer layout
 
-On the **first login of every character**, ForeverCore applies the built-in 29-key layout below. You do not need an existing main character or to capture keybinds first. The preset also updates previously imported layouts because its revision has changed. It keeps unrelated keys and stores a per-character backup.
+The old v0.3.5 layout was hard to memorize. The **new default uses the same 12 keys on every row**, arranged by modifier. The first login of any character (regardless of name or class) applies 48 actionbar bindings, *without* requiring a main character or using `/fc setup capture`.
 
-| Row | Blizzard action bar | Keys in slot order |
-| --- | --- | --- |
-| **1: Regular** | Main | `1`, `2`, `3`, `6`, `Q`, `R`, `Z` |
-| **2: Regular** | Bottom Left | `F`, `C`, `T`, `V`, `G`, `Mousewheel Down` |
-| **3: Shift** | Bottom Right | `Shift-C`, `Shift-Space`, `Shift-V`, `Shift-X`, `Shift-E`, `Shift-2` |
-| **4: Alt** | Right | `Alt-P`, `Alt-E`, `Alt-2`, `Alt-G`, `Alt-T`, `Alt-R`, `Alt-F`, `Alt-V`, `Alt-3`, `Alt-X` |
+| Row | Blizzard bar | Modifier | Twelve buttons, left to right |
+| --- | --- | --- | --- |
+| 1 | Main | None | `1` `2` `3` `4` `Q` `E` `R` `F` `Z` `X` `C` `V` |
+| 2 | Bottom Left | Shift | `Shift+1` `Shift+2` `Shift+3` `Shift+4` `Shift+Q` `Shift+E` `Shift+R` `Shift+F` `Shift+Z` `Shift+X` `Shift+C` `Shift+V` |
+| 3 | Bottom Right | Alt | `Alt+1` `Alt+2` `Alt+3` `Alt+4` `Alt+Q` `Alt+E` `Alt+R` `Alt+F` `Alt+Z` `Alt+X` `Alt+C` `Alt+V` |
+| 4 | Right | Alt+Shift | `Alt+Shift+1` `Alt+Shift+2` `Alt+Shift+3` `Alt+Shift+4` `Alt+Shift+Q` `Alt+Shift+E` `Alt+Shift+R` `Alt+Shift+F` `Alt+Shift+Z` `Alt+Shift+X` `Alt+Shift+C` `Alt+Shift+V` |
 
-**Important:** This is a **binding layout**, not a custom visual arrangement. Row 4 uses Blizzard's **Right Action Bar**, which is vertical in the default UI; ForeverCore does not reposition it into a horizontal fourth row. The bars must be enabled and supported by the current game build.
+**Example:** `R` is row 1 / slot 7, `Shift+R` row 2 / slot 7, `Alt+R` row 3 / slot 7 and `Alt+Shift+R` row 4 / slot 7. The game bars remain visually where Blizzard puts them; the **Right** bar is normally vertical. ForeverCore binds slots, not UI placement or ability assignment.
 
-### Warrior overrides (unchanged)
+The base keys were chosen near WASD but deliberately avoid **W/A/S/D (movement)**, G (dedicated Berserker Stance), Tab, Space and the dedicated mouse controls. Assigning Q and E to abilities will replace WoW's default strafe-left / strafe-right on those keys; A/D can still be used for strafing if configured. Shift+Alt can also conflict with a Windows language-switch shortcut; turn off or change that OS shortcut if the combination switches layouts.
 
-| Key | Warrior action |
+### Warrior keybinds stay fixed
+
+| Input | Action |
 | --- | --- |
-| Side mouse button 1 (`BUTTON4`) | Battle Stance |
-| Side mouse button 2 (`BUTTON5`) | Defensive Stance |
+| Mouse thumb `BUTTON4` | Battle Stance |
+| Mouse thumb `BUTTON5` | Defensive Stance |
 | `G` | Berserker Stance |
-| Middle mouse (`BUTTON3`) | Taunt |
-| Wheel down | Heroic Strike |
-| Wheel up | Cleave |
+| Middle mouse `BUTTON3` | Taunt |
+| Mousewheel down | Heroic Strike |
+| Mousewheel up | Cleave |
 
-For Warriors, `G` and Wheel Down **do not also activate** the Bottom Left slots; these actionbar hotkeys are overridden by the dedicated Warrior mappings. Other classes receive those two regular row-2 hotkeys. Physical mouse side button numbering may vary by hardware. The screenshot label `SSP` was tentatively interpreted as Shift-Space and still needs in-client verification.
+No Warrior mouse or stance binding overlaps the 48 actionbar keys. Other classes receive the same 48 actionbar binds but not Warrior-specific abilities.
 
-### Commands and behavior
+### Migrating and controlling the layout
+
+The preset revision is bumped, so v0.3.4 and v0.3.5 characters automatically receive the new layout on their next login. Known **old default keybinds** are removed only when the character had the earlier ForeverCore preset and those keys still perform their exact old actions; keys manually repurposed since then are preserved. Backups of previous bindings remain available.
+
+- `/fc setup layout` shows the four rows.
+- `/fc setup apply` applies the current layout manually (out of combat).
+- `/fc setup restore` restores the pre-import bindings on that character and opts it out of auto-import.
+- `/fc setup capture` optionally saves your own full custom profile. A captured profile takes priority over the built-in layout.
+- `/fc setup bindings on/off` and `/fc setup settings on/off` toggle these automatic behaviors.
+
+Settings still enabled on every character: auto loot, friendly/enemy nameplates where allowed, maximum requested nameplate range (client/server cap applies), and all four extra Blizzard action bars.
+
+**Beta caveat:** these mappings and saved-binding APIs still need validation on the actual WoW Forever client. Alt+Shift and side mouse button reporting are especially worth checking on launch.
+
+## Commands and behavior
 
 - `/fc setup layout`: display the four key groups and Warrior exceptions.
 - `/fc setup status`: inspect the applied settings.
@@ -86,7 +102,7 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | --- | --- |
 | `/fc help` | Show available commands |
 | `/fc setup` | Show account setup commands |
-| `/fc setup layout` | List modifier-grouped rows 1–4 and Warrior overrides |
+| `/fc setup layout` | Show four mirrored layers (none, Shift, Alt, Alt+Shift) |
 | `/fc setup capture` | Optionally capture a full custom keybind profile; not required initially |
 | `/fc setup status` | Show whether profile / client options are active |
 | `/fc check` | Run the pre-pull check again (out of combat) |
