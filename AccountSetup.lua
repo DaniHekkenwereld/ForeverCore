@@ -128,7 +128,9 @@ local function settings()
     local s = db.accountSetup
     if s.autoCVars == nil then s.autoCVars = true end
     if s.autoBindings == nil then s.autoBindings = true end
-    if s.autoActionBars == nil then s.autoActionBars = true end
+    -- Safety migration: force off even if an older SavedVariable was true.
+    -- A later /fc setup bars on request will only show manual instructions.
+    s.autoActionBars = false
     if type(s.applied) ~= "table" then s.applied = {} end
     if type(s.backups) ~= "table" then s.backups = {} end
     -- Migrate pre-0.3 default: keep friendly plates enabled everywhere.
@@ -169,71 +171,16 @@ local function setCVar(name, value)
     local after = getCVar(name)
     return after ~= nil and tonumber(after) == tonumber(value)
 end
--- Four EXTRA Blizzard action bars: Bottom Left, Bottom Right, Right 1, Right 2.
--- Prefer native toggles (official Forever API), preserve 5/6/7 if present.
--- In modern clients, the Settings proxies update visibility immediately.
-local actionBarProxies = {
-    "PROXY_SHOW_ACTIONBAR_2",
-    "PROXY_SHOW_ACTIONBAR_3",
-    "PROXY_SHOW_ACTIONBAR_4",
-    "PROXY_SHOW_ACTIONBAR_5",
-}
-local actionBarCVars = {
-    "bottomLeftActionBar",
-    "bottomRightActionBar",
-    "rightActionBar",
-    "rightTwoActionBar",
-}
-local function enableFourActionBars()
-    local s = settings()
-    if not s or not s.autoCVars or not s.autoActionBars then return end
-    if locked() then pending = true; return end
-
-    local supported = false
-    if type(GetActionBarToggles) == "function" and type(SetActionBarToggles) == "function" then
-        local ok, a, b, c, d, e, g, h = pcall(GetActionBarToggles)
-        if ok and type(a) == "boolean" and type(b) == "boolean"
-            and type(c) == "boolean" and type(d) == "boolean" then
-            supported = true
-            if not (a and b and c and d) then
-                -- Keep optional bars 5-7 at their previous values.
-                local applied = pcall(SetActionBarToggles, true, true, true, true, e, g, h)
-                if not applied then supported = false end
-            end
-        end
-    end
-
-    -- Modern UI Settings proxies; each maps to an extra action bar.
-    if type(Settings) == "table"
-        and type(Settings.GetSetting) == "function"
-        and type(Settings.SetValue) == "function" then
-        for _, key in ipairs(actionBarProxies) do
-            local ok, setting = pcall(Settings.GetSetting, key)
-            if ok and setting ~= nil then
-                local wrote = pcall(Settings.SetValue, key, true)
-                if wrote then supported = true end
-            end
-        end
-    end
-
-    -- Fallback for older UI flavors that expose these CVars.
-    if not supported then
-        for _, key in ipairs(actionBarCVars) do
-            local result = setCVar(key, "1")
-            if result == true then supported = true end
-        end
-    end
-    if not supported and not warned["actionBars"] then
-        warned["actionBars"] = true
-        say("Extra action bars konden niet automatisch worden ingesteld op deze client.")
-    end
-end
+-- Never change Blizzard's secure actionbar visibility from the addon.
+-- Earlier versions called SetActionBarToggles with seven arguments, while
+-- Forever may expect an eighth 'alwaysShow' argument. That can unset the
+-- user's always-show flag and cause disappearing empty bars / taint.
+-- Keep existing actionbar/keybind settings untouched after migration.
 
 local function applyCVars()
     local s, db = settings()
     if not s or not s.autoCVars then return end
     if locked() then pending = true; return end
-    enableFourActionBars()
     for _, pair in ipairs(desiredCVars) do
         local result = setCVar(pair[1], pair[2])
         if result == false and not warned[pair[1]] then
@@ -506,9 +453,9 @@ function FC:SetupCommand(raw)
         say("Automatische keybind-sync: " .. option)
     elseif command == "bars" and (option == "on" or option == "off") then
         local s = settings()
-        if s then s.autoActionBars = option == "on" end
-        if option == "on" then enableFourActionBars() end
-        say("Vier extra action bars automatisch aanzetten: " .. option)
+        if s then s.autoActionBars = false end
+        say("Automatische actionbar-wijzigingen uitgeschakeld voor combatveiligheid.")
+        say("Zet Bottom Left, Bottom Right en beide Right bars handmatig aan via WoW Options > Action Bars.")
     elseif command == "settings" and (option == "on" or option == "off") then
         local s = settings(); if s then s.autoCVars = option == "on" end
         if option == "on" then applyCVars() end
