@@ -23,7 +23,56 @@ local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 -- BUTTON4/BUTTON5 assume the two mouse thumb buttons; edit if hardware differs.
 -- Direct SPELL bindings work independently of action-bar slot placement.
 -- Stance bar commands use the standard Warrior stance order.
-local starterRevision = "warrior-starter-1"
+-- Screenshot from 2026-10-23. Three displayed rows are interpreted as
+-- Main bar, Bottom Left bar, Bottom Right bar; the last two visible keys
+-- overflow onto the first two slots of the Right bar.
+-- Screenshot does NOT identify the underlying action bar IDs, so check
+-- the row/bar mapping in game before treating placement as exact.
+-- Unreadable labels and cooldown counters are intentionally left unmapped.
+local screenshotRevision = "screenshot-20261023-v1"
+local screenshotBindings = {
+    -- Top row: Main Action Bar
+    {"1", "ACTIONBUTTON1"},
+    {"2", "ACTIONBUTTON2"},
+    {"3", "ACTIONBUTTON3"},
+    {"R", "ACTIONBUTTON4"},
+    {"MOUSEWHEELDOWN", "ACTIONBUTTON5"}, -- WD label; Warriors keep Heroic Strike
+    {"Z", "ACTIONBUTTON6"},
+    -- Slot 7 unreadable/empty.
+    {"ALT-P", "ACTIONBUTTON8"},
+    {"6", "ACTIONBUTTON9"},
+    -- Remaining top-row hotkey labels look like cooldown timers: skipped.
+
+    -- Second row: Bottom Left bar (Blizzard MultiActionBar1)
+    {"F", "MULTIACTIONBAR1BUTTON1"},
+    {"C", "MULTIACTIONBAR1BUTTON2"},
+    {"G", "MULTIACTIONBAR1BUTTON3"}, -- Warriors keep Berserker Stance on G
+    {"Q", "MULTIACTIONBAR1BUTTON4"},
+    {"T", "MULTIACTIONBAR1BUTTON5"},
+    {"V", "MULTIACTIONBAR1BUTTON6"},
+    -- Slot 7 is showing a cooldown counter.
+    {"ALT-E", "MULTIACTIONBAR1BUTTON8"},
+    {"ALT-2", "MULTIACTIONBAR1BUTTON9"},
+    {"ALT-G", "MULTIACTIONBAR1BUTTON10"},
+
+    -- Third row: Bottom Right bar (Blizzard MultiActionBar2)
+    -- Slots 1 and 3 show large cooldown overlays: no reliable hotkey.
+    {"SHIFT-C", "MULTIACTIONBAR2BUTTON2"},
+    {"SHIFT-SPACE", "MULTIACTIONBAR2BUTTON4"}, -- SSP = Shift-Space (verify)
+    {"SHIFT-V", "MULTIACTIONBAR2BUTTON5"},
+    {"SHIFT-X", "MULTIACTIONBAR2BUTTON6"},
+    {"SHIFT-E", "MULTIACTIONBAR2BUTTON7"},
+    {"ALT-T", "MULTIACTIONBAR2BUTTON8"},
+    {"ALT-R", "MULTIACTIONBAR2BUTTON9"},
+    {"ALT-F", "MULTIACTIONBAR2BUTTON10"},
+    {"ALT-V", "MULTIACTIONBAR2BUTTON11"},
+    {"SHIFT-2", "MULTIACTIONBAR2BUTTON12"},
+
+    -- Two trailing icons beyond the 12-slot third row: Right bar
+    {"ALT-3", "MULTIACTIONBAR3BUTTON1"},
+    {"ALT-X", "MULTIACTIONBAR3BUTTON2"},
+}
+local starterRevision = screenshotRevision
 local warriorStarter = {
     {"BUTTON4", "SHAPESHIFTBUTTON1"},    -- Battle Stance
     {"BUTTON5", "SHAPESHIFTBUTTON2"},    -- Defensive Stance
@@ -230,8 +279,8 @@ local function applyBindings(force)
     local characterClass = classToken()
     local profile = s.profile
     local captured = type(profile) == "table" and type(profile.keys) == "table" and #profile.keys >= 5
-    local starter = not captured and characterClass == "WARRIOR"
-    if not captured and not starter then return end
+    -- The built-in screenshot layout works on every class, without capture.
+    local starter = not captured
     local revision = captured and profile.revision or starterRevision
     if not force and s.applied[guid] == revision then return end
     if s.excluded and s.excluded[guid] and not force then return end
@@ -241,8 +290,24 @@ local function applyBindings(force)
     local sameClass = captured and profile.class == characterClass
     local target = {}
     if starter then
-        for _, pair in ipairs(warriorStarter) do
-            target[#target + 1] = {pair[1], pair[2]}
+        local orderedKeys = {}
+        local positions = {}
+        local function add(key, command)
+            if not positions[key] then
+                orderedKeys[#orderedKeys + 1] = key
+                positions[key] = #orderedKeys
+            end
+            target[positions[key]] = {key, command}
+        end
+        for _, pair in ipairs(screenshotBindings) do
+            add(pair[1], pair[2])
+        end
+        -- Preserve the user's existing Warrior-specific stance / mouse prefs.
+        -- These six take priority where a screenshot hotkey conflicts.
+        if characterClass == "WARRIOR" then
+            for _, pair in ipairs(warriorStarter) do
+                add(pair[1], pair[2])
+            end
         end
     else
         for _, pair in ipairs(profile.keys) do
@@ -270,7 +335,9 @@ local function applyBindings(force)
         s.applied[guid] = revision
         if s.excluded then s.excluded[guid] = nil end
         if starter then
-            say("Starter-keybinds: 6 Warrior-toetsen ingesteld; overige bindings blijven staan.")
+            say("Screenshot-keybinds ingesteld: " .. #target .. " toetsen ("
+                .. (characterClass == "WARRIOR" and "incl. Warrior stance/mouse binds" or "algemeen")
+                .. "); overige toetsen blijven staan.")
         else
             say("Keybind-profiel toegepast: " .. #target .. " toetsen ("
                 .. (sameClass and "volledig" or "class-onafhankelijk") .. ").")
@@ -312,7 +379,7 @@ local function status()
     if not s then return end
     local p = s.profile
     say("Setup: CVars " .. (s.autoCVars and "aan" or "uit") .. ", keybind-sync " .. (s.autoBindings and "aan" or "uit")
-        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "Warrior starter (6 toetsen; geen hoofdchar nodig)") .. ".")
+        .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "ingebouwde screenshot-layout (geen hoofdchar nodig)") .. ".")
     local bars = "onbekend"
     if type(GetActionBarToggles) == "function" then
         local ok, a, b, c, d = pcall(GetActionBarToggles)
