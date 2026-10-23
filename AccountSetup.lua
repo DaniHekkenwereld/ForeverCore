@@ -23,7 +23,7 @@ local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 -- Rows 1/2/3/4 use no modifier, Shift, Alt and Shift+Alt.
 -- No WASD, Tab, Space, G, or dedicated Warrior mouse keys are remapped.
 -- Right Action Bar is still vertical in Blizzard's default layout.
-local starterRevision = "ergonomic-4layer-20261023-v3"
+local starterRevision = "ergonomic-4layer-20261023-v4-singlekey"
 local baseKeys = {"1", "2", "3", "4", "Q", "E", "R", "F", "Z", "X", "C", "V"}
 local starterRows = {
     {label = "Rij 1 / Main - normale toetsen", prefix = "ACTIONBUTTON", modifier = ""},
@@ -303,7 +303,37 @@ local function removeLegacyPresetBindings(previousRevision, desired)
     end
     return true
 end
-local function writeBindings(desired, clearExisting, saveMode, previousPreset)
+-- Blizzard can keep a *second* original binding on a slot (e.g. "5"
+-- still displayed for ACTIONBUTTON5, while the new "Q" also works).
+-- For the BUILT-IN preset only, detach extra keys from the 48 targeted
+-- action bar slots before binding the chosen ergonomic key.
+local function clearExtraSlotBindings(desired)
+    if type(GetBindingKey) ~= "function" then return true end
+    local slots = {}
+    for _, binding in ipairs(desired) do
+        local key, action = binding[1], binding[2]
+        if type(action) == "string" and
+            (action:match("^ACTIONBUTTON%d+$") or action:match("^MULTIACTIONBAR%d+BUTTON%d+$")) then
+            if not slots[action] then slots[action] = {} end
+            slots[action][key] = true
+        end
+    end
+    for action, chosenKeys in pairs(slots) do
+        local ok, key1, key2 = pcall(GetBindingKey, action)
+        if ok then
+            for _, key in ipairs({key1, key2}) do
+                if type(key) == "string" and not chosenKeys[key] then
+                    if not setKey(key, nil) then
+                        return false, "old slot key " .. key
+                    end
+                end
+            end
+        end
+    end
+    return true
+end
+
+local function writeBindings(desired, clearExisting, saveMode, previousPreset, normalizeSlots)
     if locked() then return false, "in combat" end
     if type(SaveBindings) ~= "function" then return false, "SaveBindings unavailable" end
     local active = collect()
@@ -315,6 +345,10 @@ local function writeBindings(desired, clearExisting, saveMode, previousPreset)
     end
     if previousPreset then
         local cleaned, reason = removeLegacyPresetBindings(previousPreset, desired)
+        if not cleaned then return false, reason end
+    end
+    if normalizeSlots then
+        local cleaned, reason = clearExtraSlotBindings(desired)
         if not cleaned then return false, reason end
     end
     for _, pair in ipairs(desired) do
@@ -383,7 +417,7 @@ local function applyBindings(force)
     if not s.backups[guid] then
         s.backups[guid] = {keys = current, mode = 2}
     end
-    local ok, reason = writeBindings(target, captured and sameClass, 2, starter and s.applied[guid] or nil)
+    local ok, reason = writeBindings(target, captured and sameClass, 2, starter and s.applied[guid] or nil, starter)
     running = false
     if ok then
         s.applied[guid] = revision
