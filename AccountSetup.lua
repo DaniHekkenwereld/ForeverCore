@@ -463,7 +463,7 @@ end
 function FC:SetupCommand(raw)
     local command, option = tostring(raw or ""):lower():match("^%s*(%S*)%s*(%S*)")
     if command == "layout" then printStarterLayout()
-    if command == "capture" then capture()
+    elseif command == "capture" then capture()
     elseif command == "apply" then applyBindings(true)
     elseif command == "restore" then restore()
     elseif command == "status" then status()
