@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.7-beta — 2026-10-23
+
+- Fix `AccountSetup.lua` load-blocking Lua syntax error (`if` changed to `elseif` in `/fc setup` command handling); previous builds reported `end expected near <eof>`.
+- No binding layout changes; 0.3.6 ergonomic preset remains intact.
+
+
 ## 0.3.6-beta — 2026-10-23
 
 - Rebuilt the screenshot-derived keybind preset into **four identical 12-key patterns**: no modifier, Shift, Alt, Alt+Shift.
