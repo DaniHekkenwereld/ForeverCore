@@ -4,10 +4,10 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.9-beta
+## Included in v0.3.10-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
-- **Icon-only pre-pull reminders:** two compact 44×44 spell icons with pulsing glow for missing **Battle Shout** and missing **Defensive Stance** (tank profile, once learned). No background dialog, status text, or footer. Icons vanish when both conditions are satisfied; they remain movable via `/fc move`.
+- **Battle Shout reminder only:** one compact 44×44 spell icon with pulsing glow if the buff is missing. No stance reminder, dialog, status text or footer. It disappears when Battle Shout is active and remains movable via `/fc move`.
 - Manually switch between tank, Fury, and Arms profiles.
 - Raid debuff display: **Sunder Armor** stacks (up to 5), **Demoralizing Shout**, **Thunder Clap** on your hostile target. If combat auras are secret, status is unknown (`?`), never falsely marked missing.
 - **Taunt feedback:** warns on a spellcast failure event if the client supplies it and reminds you to verify the boss target when you cast Taunt; **resist/miss cannot be proven** without the combat log.
@@ -97,13 +97,11 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | Nameplate range | Request 60 yards (server cap may be lower) |
 | Bottom Left, Bottom Right, Right 1 and Right 2 | Show all |
 
-## Pre-pull reminder appearance (v0.3.9)
+## Battle Shout reminder (v0.3.10)
 
-The original 438×100 black pre-pull text panel has been replaced by a tiny icon holder. The **Battle Shout icon** appears only when its buff is absent and `/fc shout on` is active; the **Defensive Stance icon** appears only on the tank profile when the stance has been learned and is not selected. Both show a gentle golden pulsing border. The holder centers one icon if only one is needed, displays two side-by-side when both are needed, and disappears completely once satisfied. The reminder uses spell artwork, not text, cooldown bars, or other combat ability alerts.
+The pre-pull HUD contains **only the Battle Shout ability icon** (44×44 pixels) with a gentle gold pulsing border. It appears when Battle Shout is missing and `/fc shout on` is active, and disappears as soon as the buff is detected. **Defensive Stance and all other stance reminders have been removed.** The user's stance keybinds and Warrior macros are unchanged.
 
-`/fc move` temporarily displays the icons so you can reposition them even when no reminder is currently active. Drag and release to save. `/fc show on` shows the icons outside raids; in combat, they are hidden because the Forever aura API may return secret values. Auras unavailable to addons also result in hidden reminders, not a false warning.
-
-The existing flask/food settings remain stored but **are not displayed in this icon-only panel**. The raid debuff and Taunt modules are unchanged.
+`/fc move` temporarily previews the Battle Shout icon so you can reposition it. `/fc show on` enables the reminder outside raid instances; it remains hidden in combat or when the client does not expose readable aura information. The other raid debuff and Taunt modules are unchanged.
 
 ## Commands
 
@@ -115,7 +113,7 @@ The existing flask/food settings remain stored but **are not displayed in this i
 | `/fc setup capture` | Optionally capture a full custom keybind profile; not required initially |
 | `/fc setup status` | Show whether profile / client options are active |
 | `/fc check` | Run the pre-pull check again (out of combat) |
-| `/fc move` | Drag the compact Battle Shout / stance icons (out of combat) |
+| `/fc move` | Drag the single Battle Shout icon (out of combat) |
 | `/fc show on` or `/fc show off` | Show/hide the panel outside raid instances |
 | `/fc plates auto` | Try to show friendly nameplates in raid instances only |
 | `/fc plates on` or `/fc plates off` | Try to force friendly nameplates on or off |
