@@ -235,6 +235,8 @@ local function refresh()
     end
 
     -- Keep them adjacent even if only one icon is showing.
+    shoutIcon:ClearAllPoints()
+    stanceIcon:ClearAllPoints()
     if showShout and showStance then
         shoutIcon:SetPoint("CENTER", frame, "CENTER", -26, 0)
         stanceIcon:SetPoint("CENTER", frame, "CENTER", 26, 0)
@@ -272,7 +274,7 @@ local function moveFrame()
         refresh()
         say("Positie opgeslagen. Let op: SavedVariables zijn in sommige beta-builds defect.")
     end)
-    say("Sleep het paneel met de linkermuisknop. Loslaten bewaart de positie.")
+    say("Sleep de iconen met de linkermuisknop. Loslaten bewaart de positie.")
 end
 
 -- Each entry is a regular WoW macro. A user keypress is always required.
