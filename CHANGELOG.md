@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.4-beta — 2026-10-23
+
+- Built in 29 readable hotkeys from the supplied three-row actionbar screenshot. Mapped presumed row 1 to Main, row 2 to Bottom Left, row 3 to Bottom Right; trailing two to Right Action Bar.
+- Preset now applies automatically on **any** character without capturing from an existing main. Previously unmapped keys remain unchanged.
+- Existing Warrior direct stance/spell bindings (G, side mouse, scroll down/up, Taunt) take precedence on Warriors.
+- Added `/fc setup layout` to view the preset in-game.
+- Explicitly excluded hidden/ambiguous hotkeys and countdown timer text, and marked screenshot row-to-Blizzard-bar mapping as an assumption.
+- Still pending on-client verification for hotkey labels, SHIFT-SPACE interpretation and inferred row-to-bar IDs.
+
+
 ## 0.3.3-beta — 2026-10-22
 
 - Automatically enable all four additional Blizzard action bars on new and existing characters: Bottom Left, Bottom Right, Right 1 and Right 2.
