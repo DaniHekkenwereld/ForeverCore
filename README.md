@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.6-beta
+## Included in v0.3.8-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - Movable pre-pull status panel.
@@ -33,7 +33,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
 3. Launch WoW Forever, enable **ForeverCore** on the AddOns screen and run `/fc help`.
 
-## Fresh-character keybinds (v0.3.6) — mirrored 4-layer layout
+## Fresh-character keybinds (v0.3.8) — mirrored 4-layer layout
 
 The old v0.3.5 layout was hard to memorize. The **new default uses the same 12 keys on every row**, arranged by modifier. The first login of any character (regardless of name or class) applies 48 actionbar bindings, *without* requiring a main character or using `/fc setup capture`.
 
@@ -72,6 +72,8 @@ The preset revision is bumped, so v0.3.4 and v0.3.5 characters automatically rec
 - `/fc setup bindings on/off` and `/fc setup settings on/off` toggle these automatic behaviors.
 
 Settings still enabled on every character: auto loot, friendly/enemy nameplates where allowed, maximum requested nameplate range (client/server cap applies), and all four extra Blizzard action bars.
+
+**Fixed after first in-game screenshot:** Old Blizzard keys (such as `5` for main-bar slot 5) could remain attached as a second binding alongside the new preset key (`Q`). The preset now removes extra bindings from its 48 target actionbar slots before assigning one key per slot. Existing backups remain available with `/fc setup restore`. The pre-pull panel also no longer demands Defensive Stance of an under-level-10 Warrior; spell-known APIs are consulted on higher-level characters where available.
 
 **Beta caveat:** these mappings and saved-binding APIs still need validation on the actual WoW Forever client. Alt+Shift and side mouse button reporting are especially worth checking on launch.
 
