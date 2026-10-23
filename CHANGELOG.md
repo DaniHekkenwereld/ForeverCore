@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.11-beta — 2026-10-23
+
+- Emergency compatibility fix after user's Forever beta screenshots showed an extra actionbar vanishing during combat and an interface-action-blocked warning.
+- Remove all automatic `SetActionBarToggles`, `Settings.SetValue`, and actionbar-CVar writes from login, zone changes and addon settings. Bar visibility is now set only by Blizzard's own UI.
+- Force legacy `autoActionBars` setting off, including existing accounts with a previously saved true value; `/fc setup bars on/off` now gives manual instructions without touching secured Blizzard bars.
+- Prior code passed 7 arguments to a Forever actionbar API supporting an eighth `alwaysShow` argument; do not silently change that state again.
+- Stop repeated `nameplateShowFriends` writes after the first rejected write in each session, preventing repeated in-chat warnings.
+- Preserve existing keybinds, auto loot, Battle Shout icon and other modules.
+- Root cause is suspected, not yet confirmed; requires A/B test with addon enabled/disabled in the Forever client.
+
+
 ## 0.3.10-beta — 2026-10-23
 
 - Removed the Defensive Stance reminder icon, glow and stance-state checks from the pre-pull HUD.
