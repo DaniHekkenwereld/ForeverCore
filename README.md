@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.10-beta
+## Included in v0.3.11-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - **Battle Shout reminder only:** one compact 44×44 spell icon with pulsing glow if the buff is missing. No stance reminder, dialog, status text or footer. It disappears when Battle Shout is active and remains movable via `/fc move`.
@@ -70,7 +70,7 @@ The preset revision is bumped, so v0.3.4 and v0.3.5 characters automatically rec
 - `/fc setup capture` optionally saves your own full custom profile. A captured profile takes priority over the built-in layout.
 - `/fc setup bindings on/off` and `/fc setup settings on/off` toggle these automatic behaviors.
 
-Settings still enabled on every character: auto loot, friendly/enemy nameplates where allowed, maximum requested nameplate range (client/server cap applies), and all four extra Blizzard action bars.
+Automatic settings remain: auto loot and nameplates/range where the beta API permits them. **Blizzard actionbar visibility must now be enabled manually in the game's Options > Action Bars.** ForeverCore never writes protected actionbar visibility settings at login.
 
 **Fixed after first in-game screenshot:** Old Blizzard keys (such as `5` for main-bar slot 5) could remain attached as a second binding alongside the new preset key (`Q`). The preset now removes extra bindings from its 48 target actionbar slots before assigning one key per slot. Existing backups remain available with `/fc setup restore`. The pre-pull panel also no longer demands Defensive Stance of an under-level-10 Warrior; spell-known APIs are consulted on higher-level characters where available.
 
@@ -95,7 +95,15 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | Friendly and enemy nameplates | On where supported |
 | Always show nameplates | On |
 | Nameplate range | Request 60 yards (server cap may be lower) |
-| Bottom Left, Bottom Right, Right 1 and Right 2 | Show all |
+| Bottom Left, Bottom Right, Right 1 and Right 2 | **Manual in WoW Options**; automatic addon changes disabled for combat safety |
+
+## Actionbar combat safety (v0.3.11)
+
+Screenshots from an actual Forever beta client showed the extra lower actionbar disappearing in combat alongside a Blizzard **interface action blocked by an addon** notice. This is not conclusive proof ForeverCore caused the blocked action, but the previously used `SetActionBarToggles` and `Settings.SetValue` calls were unsafe and have been removed entirely from automatic login/zone behavior. The earlier `SetActionBarToggles` call passed seven values, omitting the optional eighth `alwaysShow` argument. The native API persists values for the next load, not immediate visibility.
+
+**How to recover:** first try `/fc setup bars off` followed by `/reload` on the old installed build. After installing v0.3.11, use WoW's **Options > Action Bars** to enable Bottom Left, Bottom Right, Right 1, and Right 2 manually. If empty slots disappear, try `/console alwaysShowActionBars 1` (outside combat) and `/reload`. The addon no longer edits actionbar visibility even when `/fc setup bars on` is requested; that command prints manual setup instructions.
+
+Existing **48 keybind slots, character-specific backups, auto loot and the Battle Shout icon** remain unchanged. Nameplate-CVar writes from Core now stop after one failed attempt per session rather than retrying on every event. If combat problems persist with ForeverCore disabled, the issue needs diagnosis outside this module as well.
 
 ## Battle Shout reminder (v0.3.10)
 
