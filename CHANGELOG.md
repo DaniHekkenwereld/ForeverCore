@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.5-beta — 2026-10-23
+
+- Reorganized all 29 screenshot-derived actionbar hotkeys into four consistent groups: unmodified keys on the Main and Bottom Left bars, Shift-only on Bottom Right, Alt-only on Right.
+- Preserved Warrior-specific bindings (G = Berserker Stance, mousewheel down = Heroic Strike, wheel up = Cleave, middle mouse = Taunt, side buttons for Battle/Defensive Stance), taking priority over overlapping actionbar slots.
+- Versioned the built-in preset so already initialized characters receive the revised grouping, unless a manually captured profile overrides it.
+- Updated `/fc setup layout` to show the new key groups.
+- This changes **bindings only**; the default Right bar remains vertical. In-client testing is still pending.
+
+
 ## 0.3.4-beta — 2026-10-23
 
 - Built in 29 readable hotkeys from the supplied three-row actionbar screenshot. Mapped presumed row 1 to Main, row 2 to Bottom Left, row 3 to Bottom Right; trailing two to Right Action Bar.
