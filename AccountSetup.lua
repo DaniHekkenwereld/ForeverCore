@@ -328,6 +328,31 @@ local function applyBindings(force)
     local revision = captured and profile.revision or starterRevision
     if not force and s.applied[guid] == revision then return end
     if s.excluded and s.excluded[guid] and not force then return end
+
+    -- Never re-import the whole built-in layout when an existing character
+    -- logs in after an addon update: preserve all edited keybinds.
+    -- Only repair X if it still points to the exact old ForeverCore mapping.
+    if not force and starter and s.applied[guid] ~= nil then
+        local oldAction
+        if type(GetBindingAction) == "function" then
+            local ok, action = pcall(GetBindingAction, "X")
+            if ok and type(action) == "string" then oldAction = action end
+        end
+        if oldAction == "ACTIONBUTTON10" then
+            if not setKey("X", "SITORSTAND") then
+                say("X kon niet worden hersteld. Probeer /fc setup apply.")
+                return
+            end
+            local saved, result = pcall(SaveBindings, 2)
+            if not saved or result == false then
+                say("X = Sit/Move Down kon niet worden opgeslagen.")
+                return
+            end
+            say("X hersteld naar Sit/Move Down; overige keybinds ongemoeid.")
+        end
+        s.applied[guid] = revision
+        return
+    end
     if running then return end
     running = true
 
