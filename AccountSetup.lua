@@ -16,6 +16,11 @@ local desiredCVars = {
     {"nameplateShowAll", "1"},
     {"nameplateMaxDistance", "60"},
     {"nameplatePlayerMaxDistance", "60"},
+    -- Forever self-highlight / character outline (options + renderer).
+    {"Outline", "2"},
+    {"graphicsOutlineMode", "2"},
+    {"findYourselfModeOutline", "1"},
+    {"findYourselfAnywhere", "1"},
 }
 local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 
@@ -23,7 +28,7 @@ local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 -- Rows 1/2/3/4 use no modifier, Shift, Alt and Shift+Alt.
 -- No WASD, Tab, Space, G, or dedicated Warrior mouse keys are remapped.
 -- Right Action Bar is still vertical in Blizzard's default layout.
-local starterRevision = "ergonomic-4layer-20261023-v4-singlekey"
+local starterRevision = "ergonomic-4layer-20261025-v5-restore-movedown"
 local baseKeys = {"1", "2", "3", "4", "Q", "E", "R", "F", "Z", "X", "C", "V"}
 local starterRows = {
     {label = "Rij 1 / Main - normale toetsen", prefix = "ACTIONBUTTON", modifier = ""},
@@ -34,7 +39,11 @@ local starterRows = {
 local screenshotBindings = {}
 for _, row in ipairs(starterRows) do
     for index, key in ipairs(baseKeys) do
-        screenshotBindings[#screenshotBindings + 1] = {row.modifier .. key, row.prefix .. index}
+        -- The bare X is Sit/Move Down, not an actionbar key. Keep modifier
+        -- combinations such as Shift+X, Alt+X, and Shift+Alt+X.
+        if row.modifier ~= "" or key ~= "X" then
+            screenshotBindings[#screenshotBindings + 1] = {row.modifier .. key, row.prefix .. index}
+        end
     end
 end
 
@@ -337,6 +346,9 @@ local function applyBindings(force)
         for _, pair in ipairs(screenshotBindings) do
             add(pair[1], pair[2])
         end
+        -- Restore Blizzard's standard X = Sit/Move Down. On existing
+        -- ForeverCore characters this replaces the old X = ACTIONBUTTON10.
+        add("X", "SITORSTAND")
         -- Preserve the user's existing Warrior-specific stance / mouse prefs.
         -- These six take priority where a screenshot hotkey conflicts.
         if characterClass == "WARRIOR" then
@@ -428,16 +440,23 @@ local function status()
         .. ", enemy plates=" .. tostring(getCVar("nameplateShowEnemies"))
         .. ", friend plates=" .. tostring(getCVar("nameplateShowFriends") or getCVar("nameplateShowFriendlyPlayers"))
         .. ", afstand=" .. tostring(getCVar("nameplateMaxDistance")) .. " (effectieve servercap kan lager zijn).")
+    say("Player Outline=" .. tostring(getCVar("Outline"))
+        .. ", Graphics Outline=" .. tostring(getCVar("graphicsOutlineMode"))
+        .. ", Self Highlight=" .. tostring(getCVar("findYourselfAnywhere"))
+        .. ", Self Outline=" .. tostring(getCVar("findYourselfModeOutline")) .. ".")
 end
 local function printStarterLayout()
-    say("4 symmetrische keybind-rijen: 12 dezelfde basistoetsen per rij (48 slots).")
+    say("4 keybind-rijen: 47 actionbar-toetsen. X = Sit/Move Down (geen actionbar).")
     for _, row in ipairs(starterRows) do
         local keys = {}
         for _, base in ipairs(baseKeys) do
-            keys[#keys + 1] = row.modifier .. base
+            if row.modifier ~= "" or base ~= "X" then
+                keys[#keys + 1] = row.modifier .. base
+            end
         end
         say(row.label .. ": " .. table.concat(keys, ", "))
     end
+    say("X is Sit/Move Down; Shift+X, Alt+X en Shift+Alt+X blijven op de extra actionbars.")
     say("Warrior: G Berserker / muis 4-5 stances / midden Taunt / wiel down Heroic Strike / wiel up Cleave.")
     say("Rij 4 is de standaard verticale Right Bar; addon verandert geen balkpositie.")
 end
