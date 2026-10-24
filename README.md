@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.12-beta
+## Included in v0.3.13-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - **One-time chat tabs on each character:** `Party` for Guild, Party, Raid (including leader and raid warnings); `Whispers` for WoW and Battle.net whispers only. No Battle Shout / pre-pull reminder remains.
@@ -33,16 +33,18 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
 3. Launch WoW Forever, enable **ForeverCore** on the AddOns screen and run `/fc help`.
 
-## Fresh-character keybinds (v0.3.8) — mirrored 4-layer layout
+## Fresh-character keybinds (v0.3.13) — mirrored 4-layer layout
 
-The old v0.3.5 layout was hard to memorize. The **new default uses the same 12 keys on every row**, arranged by modifier. The first login of any character (regardless of name or class) applies 48 actionbar bindings, *without* requiring a main character or using `/fc setup capture`.
+The old v0.3.5 layout was hard to memorize. The **new default uses the same 12 key positions across modifier rows**, but leaves plain X unbound on the main actionbar to preserve Sit/Move Down. The first login of any character (regardless of name or class) applies **47 actionbar bindings plus X = Sit/Move Down**, *without* requiring a main character or using `/fc setup capture`.
 
 | Row | Blizzard bar | Modifier | Twelve buttons, left to right |
 | --- | --- | --- | --- |
-| 1 | Main | None | `1` `2` `3` `4` `Q` `E` `R` `F` `Z` `X` `C` `V` |
+| 1 | Main | None | `1` `2` `3` `4` `Q` `E` `R` `F` `Z` **(slot 10 unbound)** `C` `V` |
 | 2 | Bottom Left | Shift | `Shift+1` `Shift+2` `Shift+3` `Shift+4` `Shift+Q` `Shift+E` `Shift+R` `Shift+F` `Shift+Z` `Shift+X` `Shift+C` `Shift+V` |
 | 3 | Bottom Right | Alt | `Alt+1` `Alt+2` `Alt+3` `Alt+4` `Alt+Q` `Alt+E` `Alt+R` `Alt+F` `Alt+Z` `Alt+X` `Alt+C` `Alt+V` |
 | 4 | Right | Alt+Shift | `Alt+Shift+1` `Alt+Shift+2` `Alt+Shift+3` `Alt+Shift+4` `Alt+Shift+Q` `Alt+Shift+E` `Alt+Shift+R` `Alt+Shift+F` `Alt+Shift+Z` `Alt+Shift+X` `Alt+Shift+C` `Alt+Shift+V` |
+
+**X is always Sit/Move Down**, including for characters that previously received the wrong `X = ACTIONBUTTON10` mapping. **Shift+X, Alt+X and Alt+Shift+X stay active** on the other three bars. Updating to v0.3.13 bumps the preset revision once for this correction; afterward subsequent logins/reloads skip import when the same revision has already been applied. Custom captured binding profiles still take precedence.
 
 **Example:** `R` is row 1 / slot 7, `Shift+R` row 2 / slot 7, `Alt+R` row 3 / slot 7 and `Alt+Shift+R` row 4 / slot 7. The game bars remain visually where Blizzard puts them; the **Right** bar is normally vertical. ForeverCore binds slots, not UI placement or ability assignment.
 
@@ -96,7 +98,13 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | Friendly and enemy nameplates | On where supported |
 | Always show nameplates | On |
 | Nameplate range | Request 60 yards (server cap may be lower) |
+| Player outline (Outline Mode) | On / High (`Outline=2`, renderer `graphicsOutlineMode=2` when accessible) |
+| Player self-highlight | Always enabled with outline (`findYourselfAnywhere=1`, `findYourselfModeOutline=1`) |
 | Bottom Left, Bottom Right, Right 1 and Right 2 | **Manual in WoW Options**; automatic addon changes disabled for combat safety |
+
+## New self-outline defaults (v0.3.13)
+
+On login, ForeverCore requests the game's **Outline Mode** and **always-on self highlight (yellow player outline)**. These use documented settings from the Forever options system. The renderer-related `graphicsOutlineMode` value is requested when readable through the normal CVar API; not every Forever build exposes every graphics CVar to addons. If an API refuses a setting, use WoW Options to enable it manually. No secured actionbar or Edit Mode writes have been reintroduced. Check actual results using `/fc setup status`.
 
 ## Actionbar combat safety (v0.3.11)
 
