@@ -21,6 +21,8 @@ local desiredCVars = {
     {"graphicsOutlineMode", "2"},
     {"findYourselfModeOutline", "1"},
     {"findYourselfAnywhere", "1"},
+    {"countdownForCooldowns", "1"}, -- numeric cooldown timers on action buttons
+    {"cooldownViewerEnabled", "1"}, -- Blizzard native Cooldown Manager
 }
 local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 
@@ -465,6 +467,8 @@ local function status()
         .. ", enemy plates=" .. tostring(getCVar("nameplateShowEnemies"))
         .. ", friend plates=" .. tostring(getCVar("nameplateShowFriends") or getCVar("nameplateShowFriendlyPlayers"))
         .. ", afstand=" .. tostring(getCVar("nameplateMaxDistance")) .. " (effectieve servercap kan lager zijn).")
+    say("Actionbar countdown=" .. tostring(getCVar("countdownForCooldowns"))
+        .. ", Cooldown Manager=" .. tostring(getCVar("cooldownViewerEnabled")) .. ".")
     say("Player Outline=" .. tostring(getCVar("Outline"))
         .. ", Graphics Outline=" .. tostring(getCVar("graphicsOutlineMode"))
         .. ", Self Highlight=" .. tostring(getCVar("findYourselfAnywhere"))
