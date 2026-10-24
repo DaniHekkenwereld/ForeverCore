@@ -4,9 +4,11 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.13-beta
+## Included in v0.3.14-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
+- **Cooldown numbers enabled** on action buttons and **Blizzard's Cooldown Manager enabled**, using the verified client CVars `countdownForCooldowns=1` and `cooldownViewerEnabled=1` (normal CVar restrictions apply).
+- **Bartender4 optional initialization:** for each character, if Bartender4 is installed, set Blizzard Art **off** and **padding 0** on Bartender actionbars. Leave scale, positions, alpha, number of rows, visibility and keybindings untouched. All Bartender UI changes are deferred until outside combat.
 - **One-time chat tabs on each character:** `Party` for Guild, Party, Raid (including leader and raid warnings); `Whispers` for WoW and Battle.net whispers only. No Battle Shout / pre-pull reminder remains.
 - Manually switch between tank, Fury, and Arms profiles.
 - Raid debuff display: **Sunder Armor** stacks (up to 5), **Demoralizing Shout**, **Thunder Clap** on your hostile target. If combat auras are secret, status is unknown (`?`), never falsely marked missing.
@@ -95,6 +97,8 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | Setting | Requested value |
 | --- | --- |
 | Auto loot | On |
+| Numeric actionbar cooldown timers | On |
+| Blizzard Cooldown Manager | On |
 | Friendly and enemy nameplates | On where supported |
 | Always show nameplates | On |
 | Nameplate range | Request 60 yards (server cap may be lower) |
@@ -105,6 +109,23 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 ## New self-outline defaults (v0.3.13)
 
 On login, ForeverCore requests the game's **Outline Mode** and **always-on self highlight (yellow player outline)**. These use documented settings from the Forever options system. The renderer-related `graphicsOutlineMode` value is requested when readable through the normal CVar API; not every Forever build exposes every graphics CVar to addons. If an API refuses a setting, use WoW Options to enable it manually. No secured actionbar or Edit Mode writes have been reintroduced. Check actual results using `/fc setup status`.
+
+## Cooldown numbers, Cooldown Manager and Bartender4 (v0.3.14)
+
+On login, ForeverCore requests these built-in Blizzard client settings:
+
+| Feature | CVar | Requested value |
+| --- | --- | --- |
+| Numeric cooldown timer on actionbar icons | `countdownForCooldowns` | `1` |
+| Blizzard Cooldown Manager | `cooldownViewerEnabled` | `1` |
+
+The native Cooldown Manager is controlled by Blizzard. You can rearrange it in Edit Mode and configure tracked spells using `/cdm`. Some Forever client builds may restrict addon CVar writes; `/fc setup status` reports the actual readback.
+
+**If Bartender4 is installed**, the new `BartenderSetup.lua` module obtains the live Bartender4 AceAddon configuration and sets the **Blizzard Art module disabled** and **each available actionbar's padding to 0**. Scale, dimensions, placements, visibility, enabled bars, keybinds, and fade settings remain unchanged. The change runs **once per character**, outside combat. Bartender4 is an optional dependency; nothing is modified if it is absent. Use `/fc bartender status` to inspect or `/fc bartender apply` for an explicit reapply if you switch profiles.
+
+**Important:** Bartender4 maintains its own action buttons, and its keybinding behavior may differ from Blizzard's default bars. In particular, Bartender's documentation says extra bars may require its own KeyBound binding setup via `/kb`. Our default Blizzard actionbar keybinds must be checked after installing Bartender4. Do not assume all 47 additional binds will transfer automatically.
+
+This feature does **not** reintroduce Blizzard actionbar visibility writes, which were disabled after combat-related bugs in the Forever beta.
 
 ## Actionbar combat safety (v0.3.11)
 
@@ -137,6 +158,8 @@ The Battle Shout reminder UI, pre-pull check and `/fc move` controls have been *
 | `/fc help` | Show available commands |
 | `/fc chat status` | Show whether Party/Whispers tabs have already been set up on this character |
 | `/fc chat setup` | Create missing Party/Whispers tabs, once per character |
+| `/fc bartender status` | Display Bartender integration setup status |
+| `/fc bartender apply` | Reapply Blizzard Art off and all actionbar padding zero outside combat |
 | `/fc setup` | Show account setup commands |
 | `/fc setup layout` | Show four mirrored layers (none, Shift, Alt, Alt+Shift) |
 | `/fc setup capture` | Optionally capture a full custom keybind profile; not required initially |
