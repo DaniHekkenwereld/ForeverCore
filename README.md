@@ -4,10 +4,10 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.11-beta
+## Included in v0.3.12-beta
 
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
-- **Battle Shout reminder only:** one compact 44×44 spell icon with pulsing glow if the buff is missing. No stance reminder, dialog, status text or footer. It disappears when Battle Shout is active and remains movable via `/fc move`.
+- **One-time chat tabs on each character:** `Party` for Guild, Party, Raid (including leader and raid warnings); `Whispers` for WoW and Battle.net whispers only. No Battle Shout / pre-pull reminder remains.
 - Manually switch between tank, Fury, and Arms profiles.
 - Raid debuff display: **Sunder Armor** stacks (up to 5), **Demoralizing Shout**, **Thunder Clap** on your hostile target. If combat auras are secret, status is unknown (`?`), never falsely marked missing.
 - **Taunt feedback:** warns on a spellcast failure event if the client supplies it and reminds you to verify the boss target when you cast Taunt; **resist/miss cannot be proven** without the combat log.
@@ -27,6 +27,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
      Openers.lua
      Recorder.lua
      AccountSetup.lua
+     ChatSetup.lua
    ```
 
    The client installation directory can differ. The `.toc` file must sit directly in `AddOns\ForeverCore\`.
@@ -105,30 +106,36 @@ Screenshots from an actual Forever beta client showed the extra lower actionbar 
 
 Existing **48 keybind slots, character-specific backups, auto loot and the Battle Shout icon** remain unchanged. Nameplate-CVar writes from Core now stop after one failed attempt per session rather than retrying on every event. If combat problems persist with ForeverCore disabled, the issue needs diagnosis outside this module as well.
 
-## Battle Shout reminder (v0.3.10)
+## Automatically create Party and Whispers chat tabs (v0.3.12)
 
-The pre-pull HUD contains **only the Battle Shout ability icon** (44×44 pixels) with a gentle gold pulsing border. It appears when Battle Shout is missing and `/fc shout on` is active, and disappears as soon as the buff is detected. **Defensive Stance and all other stance reminders have been removed.** The user's stance keybinds and Warrior macros are unchanged.
+On a character's first login, ForeverCore creates **two ordinary Blizzard chat window tabs**. It does **not** join or create a custom numbered chat channel.
 
-`/fc move` temporarily previews the Battle Shout icon so you can reposition it. `/fc show on` enables the reminder outside raid instances; it remains hidden in combat or when the client does not expose readable aura information. The other raid debuff and Taunt modules are unchanged.
+| Tab name | Messages shown |
+| --- | --- |
+| **Party** | `PARTY`, `PARTY_LEADER`, `RAID`, `RAID_LEADER`, `RAID_WARNING`, `GUILD` |
+| **Whispers** | `WHISPER` (incoming and outgoing private messages) and `BN_WHISPER` (Battle.net whispers); no other message types or numbered channels |
+
+The new windows start without Blizzard's default SAY, YELL, SYSTEM, or public CHANNEL groups. They appear in the ordinary chat dock. Existing named tabs are left alone, rather than overwritten. A completed installation is recorded under the character's unique GUID in account SavedVariables. **No windows are recreated at subsequent logins, reloads, or addon updates**. The regular General and Combat Log tabs are untouched.
+
+Use `/fc chat status` to see whether this character is configured. If chat UI creation was unavailable on initial login, `/fc chat setup` retries missing tabs outside combat; the addon will report a failure rather than silently altering an existing tab. Chat API behavior still needs live WoW Forever validation.
+
+The Battle Shout reminder UI, pre-pull check and `/fc move` controls have been **removed entirely**. Use your own WeakAura for Battle Shout monitoring. Warrior keybinds, account setup, raid debuffs, Taunt warnings, macros and the gameplay recorder are unchanged.
+
 
 ## Commands
 
 | Command | Effect |
 | --- | --- |
 | `/fc help` | Show available commands |
+| `/fc chat status` | Show whether Party/Whispers tabs have already been set up on this character |
+| `/fc chat setup` | Create missing Party/Whispers tabs, once per character |
 | `/fc setup` | Show account setup commands |
 | `/fc setup layout` | Show four mirrored layers (none, Shift, Alt, Alt+Shift) |
 | `/fc setup capture` | Optionally capture a full custom keybind profile; not required initially |
 | `/fc setup status` | Show whether profile / client options are active |
-| `/fc check` | Run the pre-pull check again (out of combat) |
-| `/fc move` | Drag the single Battle Shout icon (out of combat) |
-| `/fc show on` or `/fc show off` | Show/hide the panel outside raid instances |
 | `/fc plates auto` | Try to show friendly nameplates in raid instances only |
 | `/fc plates on` or `/fc plates off` | Try to force friendly nameplates on or off |
 | `/fc mode tank`, `/fc mode fury`, or `/fc mode arms` | Set the Warrior profile manually |
-| `/fc flask on/off` | Toggle flask check |
-| `/fc food on/off` | Toggle food check |
-| `/fc shout on/off` | Toggle Battle Shout check |
 | `/fc macros` | Create the 15 original character-specific Warrior macros |
 | `/fc openers` | Open draggable/editable macros for Protection, Fury and Arms |
 | `/fc openers prot` / `fury` / `arms` | Open the macro window on a specific specialization tab |
