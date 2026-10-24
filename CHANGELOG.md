@@ -4,7 +4,7 @@
 
 - Restore unmodified **X** to Blizzard's **SITORSTAND (Sit/Move Down)** on the builtin ergonomic setup. Main actionbar slot 10 is intentionally left unbound.
 - Keep `Shift+X`, `Alt+X`, and `Alt+Shift+X` mapped to their existing modifier-layer actionbar slots.
-- Bump the built-in preset revision so a character previously given `X = ACTIONBUTTON10` receives the correction once, then no re-import on later logins with unchanged profile.
+- New characters get all 47 actionbar bindings plus `X = SITORSTAND`. Existing characters only get an **X-only migration** if `X` still maps to the old `ACTIONBUTTON10`; no other keybinds are re-imported or overwritten on addon updates.
 - Request both Forever visual options on login: Outline Mode (`Outline=2` and renderer `graphicsOutlineMode=2` when CVar-accessible), plus always-on player self-outline (`findYourselfModeOutline=1`, `findYourselfAnywhere=1`).
 - Report outline/highlight readbacks via `/fc setup status`. Secure actionbar visibility remains manual after the prior beta taint issue.
 - Pending in-client validation on Forever 1.60 beta; game may reject or override renderer CVars.
