@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.14-beta — 2026-10-25
+
+- Enable numeric actionbar cooldown countdown timers via `countdownForCooldowns=1` on login.
+- Enable the native Blizzard Cooldown Manager via `cooldownViewerEnabled=1` on login; position and tracked spell configuration stay under Blizzard Edit Mode and `/cdm`.
+- Add optional `BartenderSetup.lua` integration: when Bartender4 is installed and initialized, disable its Blizzard Art module and set padding to `0` for all available Bartender actionbars, once per character, only outside combat.
+- Do not touch Bartender bar scale, positions, visibility, number of buttons, keybindings or other controls. Use `/fc bartender status` and `/fc bartender apply` for inspection and explicit reapply.
+- Important: Bartender4 actionbar buttons do not necessarily inherit all default Blizzard binding commands; test `/kb` if bindings do not carry over.
+- Still pending validation in the real Forever launch client and Bartender4 build.
+
+
 ## 0.3.13-beta — 2026-10-25
 
 - Restore unmodified **X** to Blizzard's **SITORSTAND (Sit/Move Down)** on the builtin ergonomic setup. Main actionbar slot 10 is intentionally left unbound.
