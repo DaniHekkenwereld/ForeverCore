@@ -44,7 +44,7 @@ The old v0.3.5 layout was hard to memorize. The **new default uses the same 12 k
 | 3 | Bottom Right | Alt | `Alt+1` `Alt+2` `Alt+3` `Alt+4` `Alt+Q` `Alt+E` `Alt+R` `Alt+F` `Alt+Z` `Alt+X` `Alt+C` `Alt+V` |
 | 4 | Right | Alt+Shift | `Alt+Shift+1` `Alt+Shift+2` `Alt+Shift+3` `Alt+Shift+4` `Alt+Shift+Q` `Alt+Shift+E` `Alt+Shift+R` `Alt+Shift+F` `Alt+Shift+Z` `Alt+Shift+X` `Alt+Shift+C` `Alt+Shift+V` |
 
-**X is always Sit/Move Down**, including for characters that previously received the wrong `X = ACTIONBUTTON10` mapping. **Shift+X, Alt+X and Alt+Shift+X stay active** on the other three bars. Updating to v0.3.13 bumps the preset revision once for this correction; afterward subsequent logins/reloads skip import when the same revision has already been applied. Custom captured binding profiles still take precedence.
+**X is Sit/Move Down** on all newly configured characters. **Shift+X, Alt+X and Alt+Shift+X remain active** on the other three bars. On an existing character with a previous ForeverCore layout, the update only restores X if it is still bound to the old `ACTIONBUTTON10`; **all other manually adjusted keybinds remain untouched**. On subsequent logins there is no re-import. Custom captured profiles still take precedence.
 
 **Example:** `R` is row 1 / slot 7, `Shift+R` row 2 / slot 7, `Alt+R` row 3 / slot 7 and `Alt+Shift+R` row 4 / slot 7. The game bars remain visually where Blizzard puts them; the **Right** bar is normally vertical. ForeverCore binds slots, not UI placement or ability assignment.
 
