@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.12-beta — 2026-10-24
+
+- Removed the Battle Shout reminder completely, including its pulse icon, frame, aura polling and obsolete pre-pull /fc commands. Existing Warrior skills, macros and keybinds remain unchanged.
+- New `ChatSetup.lua`: on a character's first login create a Blizzard chat tab called **Party** with Guild, Party, Party Leader, Raid, Raid Leader and Raid Warning groups.
+- Create a second tab called **Whispers** with only regular/Battle.net whisper message groups (incoming and outgoing), removing default chat groups and public channels.
+- Leave existing chat tabs alone; store completion by character GUID in SavedVariables so subsequent logins/reloads do not create duplicates.
+- Add `/fc chat setup` (manual retry) and `/fc chat status`.
+- Pending real Forever client validation of chat frame APIs.
+
+
 ## 0.3.11-beta — 2026-10-23
 
 - Emergency compatibility fix after user's Forever beta screenshots showed an extra actionbar vanishing during combat and an interface-action-blocked warning.
