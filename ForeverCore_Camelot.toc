@@ -2,10 +2,11 @@
 ## Title: ForeverCore
 ## Notes: WoW Forever beta - Warrior tools and passive gameplay recorder
 ## Author: Community prototype
-## Version: 0.3.11-beta
+## Version: 0.3.12-beta
 ## SavedVariables: ForeverCoreDB
 Core.lua
 RaidWarnings.lua
 Openers.lua
 Recorder.lua
 AccountSetup.lua
+ChatSetup.lua
