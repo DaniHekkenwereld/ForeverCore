@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.15-beta — 2026-10-26
+
+- On the first ForeverCore login of a new character, enable Blizzard Bottom Left, Bottom Right, Right 1, and Right 2 action bars, including empty-button visibility.
+- Use all eight `SetActionBarToggles` arguments: preserve optional bars 5–7 and explicitly enable `alwaysShow`. Only write outside combat, never directly update protected frames, and mark completion once per character GUID.
+- Skip characters already initialized by an earlier ForeverCore version. On first-run characters, retry when the API is not ready or the character is in combat. The bars take effect after `/reload` or relog.
+- Existing Bartender4 settings, action bar placement, spells, and keybinds remain untouched. This change still requires validation in the actual Forever client.
+
 ## 0.3.14-beta — 2026-10-25
 
 - Enable numeric actionbar cooldown countdown timers via `countdownForCooldowns=1` on login.
