@@ -1,13 +1,14 @@
 -- ForeverCore: Bartender4 initial defaults, one time per character.
--- Touch only Blizzard Art (off) and ActionBars.padding (zero).
--- Never modify scale, bar count, position, fade, visibility, or keybindings.
+-- Set Blizzard Art off, ActionBars.padding to zero, and Button Grid on.
+-- Set Out of Range Indicator to Full Button Mode.
+-- Never modify scale, bar count, position, fade, paging or keybindings.
 local FC = _G.ForeverCore
 if not FC then return end
 
 local driver = CreateFrame("Frame")
 local tried = false
 local queued = false
-local version = "bartender-padding-art-v1"
+local version = "bartender-padding-art-grid-fullrange-v2"
 
 local function say(msg)
     if DEFAULT_CHAT_FRAME then
@@ -62,7 +63,8 @@ local function applyOnce(force)
     if not bartender then return end -- Bartender4 is optional: not installed yet.
     local barsMod = getModule(bartender, "ActionBars")
     local artMod = getModule(bartender, "BlizzardArt")
-    if not barsMod or not artMod or not barsMod.db or not artMod.db
+    if not barsMod or not artMod or not barsMod.db or not artMod.db or not bartender.db
+        or type(bartender.db.profile) ~= "table"
         or type(barsMod.db.profile) ~= "table"
         or type(barsMod.db.profile.actionbars) ~= "table"
         or type(artMod.db.profile) ~= "table" then
@@ -73,20 +75,40 @@ local function applyOnce(force)
 
     local config = barsMod.db.profile.actionbars
     local updated = 0
+    local grids = 0
     local liveOK = true
-    -- Bartender4 supports extra bars depending on version/client; only
-    -- touch padding where a real config table exists.
+    -- Only existing Bartender actionbar configurations are changed.
+    -- showgrid keeps empty slots visible; fade and hide rules are untouched.
     for id = 1, 15 do
         local barConfig = config[id]
-        if type(barConfig) == "table" and barConfig.padding ~= 0 then
-            barConfig.padding = 0
-            updated = updated + 1
+        if type(barConfig) == "table" then
+            local changed = false
+            if barConfig.padding ~= 0 then
+                barConfig.padding = 0
+                updated = updated + 1
+                changed = true
+            end
+            if barConfig.showgrid ~= true then
+                barConfig.showgrid = true
+                grids = grids + 1
+                changed = true
+            end
             local liveBar = type(barsMod.actionbars) == "table" and barsMod.actionbars[id]
-            if liveBar and type(liveBar.ApplyConfig) == "function" then
+            if changed and liveBar and type(liveBar.ApplyConfig) == "function" then
                 local ok = pcall(liveBar.ApplyConfig, liveBar, barConfig)
                 if not ok then liveOK = false end
             end
         end
+    end
+
+    -- Bartender4 Options > Bars > Out of Range Indicator > Full Button Mode.
+    -- Use the same live refresh method as Bartender's own options panel.
+    bartender.db.profile.outofrange = "button"
+    if bartender.Bar and type(bartender.Bar.ForAll) == "function" then
+        local ok = pcall(bartender.Bar.ForAll, bartender.Bar, "UpdateButtonConfig")
+        if not ok then liveOK = false end
+    else
+        liveOK = false
     end
 
     local artConfig = artMod.db.profile
@@ -107,7 +129,8 @@ local function applyOnce(force)
     end
     saved[guid] = version
     say("Bartender4: Blizzard Art uit, padding 0 op " .. updated
-        .. " bars; schaal en posities ongewijzigd.")
+        .. " bars, lege slots zichtbaar op " .. grids
+        .. " bars, out of range = volledig rood icoon.")
 end
 
 function FC:BartenderCommand(cmd)
