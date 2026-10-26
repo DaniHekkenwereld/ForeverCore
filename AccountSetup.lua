@@ -139,8 +139,8 @@ local function settings()
     local s = db.accountSetup
     if s.autoCVars == nil then s.autoCVars = true end
     if s.autoBindings == nil then s.autoBindings = true end
-    -- Safety migration: force off even if an older SavedVariable was true.
-    -- A later /fc setup bars on request will only show manual instructions.
+    -- Keep the old, unsafe repeating actionbar automation disabled.
+    -- New characters use a separate one-time, per-GUID setup instead.
     s.autoActionBars = false
     if type(s.applied) ~= "table" then s.applied = {} end
     if type(s.backups) ~= "table" then s.backups = {} end
@@ -182,11 +182,61 @@ local function setCVar(name, value)
     local after = getCVar(name)
     return after ~= nil and tonumber(after) == tonumber(value)
 end
--- Never change Blizzard's secure actionbar visibility from the addon.
--- Earlier versions called SetActionBarToggles with seven arguments, while
--- Forever may expect an eighth 'alwaysShow' argument. That can unset the
--- user's always-show flag and cause disappearing empty bars / taint.
--- Keep existing actionbar/keybind settings untouched after migration.
+-- One-time initial Blizzard bar setup for characters that have never had
+-- ForeverCore's keybind preset. No writes for previously configured chars.
+-- SetActionBarToggles persists visibility for the next UI load: do NOT
+-- force a protected frame update or write SHOW_MULTI_ACTIONBAR_* globals.
+local function setupNewCharacterBars()
+    local s = settings()
+    if not s then return end
+    local guid = playerID()
+    if not guid then return end
+    if type(s.actionBarsSetup) ~= "table" then s.actionBarsSetup = {} end
+
+    local state = s.actionBarsSetup[guid]
+    if state == nil then
+        if s.applied[guid] ~= nil then
+            s.actionBarsSetup[guid] = "existing"
+            return
+        end
+        state = "pending"
+        s.actionBarsSetup[guid] = state
+    end
+    if state ~= "pending" then return end
+    if locked() then pending = true; return end
+    if type(GetActionBarToggles) ~= "function" or type(SetActionBarToggles) ~= "function" then
+        if not warned.actionBarsAPI then
+            warned.actionBarsAPI = true
+            say("Actionbar-API nog niet beschikbaar; nieuwe-character-setup uitgesteld.")
+        end
+        return
+    end
+
+    -- Preserve optional bars 5-7; activate the four regular extra bars
+    -- and explicitly pass alwaysShow as argument eight. Old builds omitted
+    -- this final argument, which could hide empty bars or taint the UI.
+    local readOK, b1, b2, b3, b4, b5, b6, b7 = pcall(GetActionBarToggles)
+    if not readOK or type(b1) ~= "boolean" or type(b2) ~= "boolean"
+        or type(b3) ~= "boolean" or type(b4) ~= "boolean" then
+        if not warned.actionBarsRead then
+            warned.actionBarsRead = true
+            say("Actionbar-instellingen niet leesbaar; nieuwe-character-setup uitgesteld.")
+        end
+        return
+    end
+    local writeOK, result = pcall(SetActionBarToggles,
+        true, true, true, true, b5, b6, b7, true)
+    if not writeOK or result == false then
+        if not warned.actionBarsWrite then
+            warned.actionBarsWrite = true
+            say("Action bars konden niet worden ingesteld; pas ze aan via WoW Options > Action Bars.")
+        end
+        return
+    end
+
+    s.actionBarsSetup[guid] = "done"
+    say("Vier extra action bars + lege knoppen ingesteld voor dit nieuwe character. Gebruik /reload om ze zichtbaar te maken.")
+end
 
 local function applyCVars()
     local s, db = settings()
@@ -461,8 +511,10 @@ local function status()
             bars = tostring(a) .. "/" .. tostring(b) .. "/" .. tostring(c) .. "/" .. tostring(d)
         end
     end
+    local guid = playerID()
+    local barState = guid and s.actionBarsSetup and s.actionBarsSetup[guid] or "nog niet gestart"
     say("Extra bars onder links/rechts + rechts 1/2: " .. bars
-        .. " (auto: " .. (s.autoActionBars and "aan" or "uit") .. ").")
+        .. " (eenmalig bij nieuwe characters; dit character: " .. barState .. ").")
     say("Auto loot=" .. tostring(getCVar("autoLootDefault"))
         .. ", enemy plates=" .. tostring(getCVar("nameplateShowEnemies"))
         .. ", friend plates=" .. tostring(getCVar("nameplateShowFriends") or getCVar("nameplateShowFriendlyPlayers"))
@@ -502,8 +554,8 @@ function FC:SetupCommand(raw)
     elseif command == "bars" and (option == "on" or option == "off") then
         local s = settings()
         if s then s.autoActionBars = false end
-        say("Automatische actionbar-wijzigingen uitgeschakeld voor combatveiligheid.")
-        say("Zet Bottom Left, Bottom Right en beide Right bars handmatig aan via WoW Options > Action Bars.")
+        say("Alle vier extra action bars worden alleen bij nieuwe characters eenmalig ingeschakeld.")
+        say("Bestaande characters: handmatig via WoW Options > Action Bars; /fc setup bars on/off verandert niets.")
     elseif command == "settings" and (option == "on" or option == "off") then
         local s = settings(); if s then s.autoCVars = option == "on" end
         if option == "on" then applyCVars() end
@@ -519,12 +571,14 @@ f:RegisterEvent("PLAYER_REGEN_ENABLED")
 f:SetScript("OnEvent", function(_, event)
     if not settings() then return end
     if event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
+        setupNewCharacterBars() -- before applyBindings marks new GUIDs as configured
         applyCVars()
         applyBindings(false)
     elseif event == "ZONE_CHANGED_NEW_AREA" then
         applyCVars()
     elseif event == "PLAYER_REGEN_ENABLED" and pending then
         pending = false
+        setupNewCharacterBars()
         applyCVars()
         applyBindings(false)
     end
