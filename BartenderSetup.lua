@@ -1,18 +1,21 @@
--- ForeverCore: Bartender4 initial defaults, one time per character.
--- Set Blizzard Art off, ActionBars.padding to zero, and Button Grid on.
--- Set Out of Range Indicator to Full Button Mode.
--- Never modify scale, bar count, position, fade, paging or keybindings.
+-- ForeverCore: Bartender4 compatibility on WoW Forever.
+-- Only configure UI settings after Bartender4's own first-run preset has loaded.
+-- Never touch action/spell assignments, paging, button offsets or bindings.
 local FC = _G.ForeverCore
 if not FC then return end
 
 local driver = CreateFrame("Frame")
-local tried = false
 local queued = false
-local version = "bartender-padding-art-grid-fullrange-v2"
+local warned = false
+local revision = "bt4-forever-bars-grid-fullrange-art-v3"
 
-local function say(msg)
+local requiredBars = {1, 3, 4, 5, 6}
+-- Bartender IDs 3/4 are the two vertical right bars; 5/6 are the lower extra bars.
+-- Bar 2 is the bonus bar and is deliberately not changed.
+
+local function say(message)
     if DEFAULT_CHAT_FRAME then
-        DEFAULT_CHAT_FRAME:AddMessage("|cff80c9ffForeverCore|r " .. msg)
+        DEFAULT_CHAT_FRAME:AddMessage("|cff80c9ffForeverCore|r " .. message)
     end
 end
 
@@ -22,8 +25,8 @@ end
 
 local function getGuid()
     if type(UnitGUID) ~= "function" then return nil end
-    local ok, value = pcall(UnitGUID, "player")
-    if ok and type(value) == "string" and value ~= "" then return value end
+    local ok, guid = pcall(UnitGUID, "player")
+    if ok and type(guid) == "string" and guid ~= "" then return guid end
     return nil
 end
 
@@ -35,113 +38,160 @@ local function getSaved()
 end
 
 local function getBartender()
-    -- AceAddon's registry is the standard way to obtain another addon's
-    -- live module, instead of altering its SavedVariables behind its back.
-    if type(LibStub) ~= "function" then return nil end
-    local ok, lib = pcall(LibStub, "AceAddon-3.0", true)
-    if not ok or not lib or type(lib.GetAddon) ~= "function" then return nil end
-    local found, addon = pcall(lib.GetAddon, lib, "Bartender4", true)
+    -- LibStub is a TABLE with an __call metamethod, not a Lua function.
+    -- The old `type(LibStub) ~= "function"` check rejected real Bartender4
+    -- on every character, silently preventing all Bartender setup.
+    if type(_G.Bartender4) == "table" then return _G.Bartender4 end
+    local stub = _G.LibStub
+    if type(stub) ~= "table" or type(stub.GetLibrary) ~= "function" then return nil end
+    local ok, ace = pcall(stub.GetLibrary, stub, "AceAddon-3.0", true)
+    if not ok or type(ace) ~= "table" or type(ace.GetAddon) ~= "function" then return nil end
+    local found, addon = pcall(ace.GetAddon, ace, "Bartender4", true)
     if found and type(addon) == "table" then return addon end
     return nil
 end
 
-local function getModule(addon, name)
-    if type(addon.GetModule) ~= "function" then return nil end
-    local ok, module = pcall(addon.GetModule, addon, name, true)
-    if ok and type(module) == "table" then return module end
+local function module(addon, name)
+    if not addon or type(addon.GetModule) ~= "function" then return nil end
+    local ok, m = pcall(addon.GetModule, addon, name, true)
+    if ok and type(m) == "table" then return m end
     return nil
+end
+
+local function ready()
+    local bartender = getBartender()
+    if not bartender or bartender.finishedLoading ~= true then return nil end
+    local bars = module(bartender, "ActionBars")
+    local art = module(bartender, "BlizzardArt")
+    if not bars or not art or type(bartender.db) ~= "table"
+        or type(bartender.db.profile) ~= "table"
+        or type(bars.db) ~= "table"
+        or type(bars.db.profile) ~= "table"
+        or type(bars.db.profile.actionbars) ~= "table"
+        or type(bars.actionbars) ~= "table"
+        or type(bars.EnableBar) ~= "function"
+        or type(art.db) ~= "table"
+        or type(art.db.profile) ~= "table" then return nil end
+    return bartender, bars, art
+end
+
+local function configureBar(bars, id)
+    local config = bars.db.profile.actionbars[id]
+    if type(config) ~= "table" then return false, "config ontbreekt voor bar " .. id end
+
+    -- Enable missing live bars using Bartender4's own method, never by
+    -- enabling Blizzard's protected bar toggles.
+    local liveBar = bars.actionbars[id]
+    if config.enabled == false or not liveBar or liveBar.disabled then
+        local ok = pcall(bars.EnableBar, bars, id)
+        if not ok then return false, "inschakelen bar " .. id end
+    end
+
+    liveBar = bars.actionbars[id]
+    if not liveBar or type(liveBar.ApplyConfig) ~= "function" then
+        return false, "live bar " .. id .. " niet beschikbaar"
+    end
+
+    -- Bartender's Button Grid shows empty slots. Disable hiding and fading
+    -- of these five bars so they stay visible with or without placed spells.
+    config.enabled = true
+    config.padding = 0
+    config.showgrid = true
+    config.alpha = 1
+    config.fadeout = false
+    if type(config.visibility) == "table" then
+        config.visibility.always = false  -- In BT4, "always" means always HIDE.
+        config.visibility.custom = false
+        config.visibility.combat = false
+        config.visibility.nocombat = false
+    end
+
+    local ok = pcall(liveBar.ApplyConfig, liveBar, config)
+    if not ok then return false, "ApplyConfig bar " .. id end
+    return true
 end
 
 local function applyOnce(force)
     if inCombat() then queued = true; return end
-    local guid = getGuid()
-    local saved = getSaved()
-    if not guid or not saved then return end
-    if saved[guid] == version and not force then return end
+    local guid, saved = getGuid(), getSaved()
+    if not guid or not saved or (saved[guid] == revision and not force) then return end
+    local bartender, bars, art = ready()
+    if not bartender then return end -- Wait until first-run Presets has finished.
 
-    local bartender = getBartender()
-    if not bartender then return end -- Bartender4 is optional: not installed yet.
-    local barsMod = getModule(bartender, "ActionBars")
-    local artMod = getModule(bartender, "BlizzardArt")
-    if not barsMod or not artMod or not barsMod.db or not artMod.db or not bartender.db
-        or type(bartender.db.profile) ~= "table"
-        or type(barsMod.db.profile) ~= "table"
-        or type(barsMod.db.profile.actionbars) ~= "table"
-        or type(artMod.db.profile) ~= "table" then
-        if not tried then say("Bartender4-modules nog niet gereed; setup uitgesteld.") end
-        tried = true
-        return
+    local failures = {}
+    for _, id in ipairs(requiredBars) do
+        local ok, reason = configureBar(bars, id)
+        if not ok then failures[#failures + 1] = reason end
     end
 
-    local config = barsMod.db.profile.actionbars
-    local updated = 0
-    local grids = 0
-    local liveOK = true
-    -- Only existing Bartender actionbar configurations are changed.
-    -- showgrid keeps empty slots visible; fade and hide rules are untouched.
-    for id = 1, 15 do
-        local barConfig = config[id]
-        if type(barConfig) == "table" then
-            local changed = false
-            if barConfig.padding ~= 0 then
-                barConfig.padding = 0
-                updated = updated + 1
-                changed = true
-            end
-            if barConfig.showgrid ~= true then
-                barConfig.showgrid = true
-                grids = grids + 1
-                changed = true
-            end
-            local liveBar = type(barsMod.actionbars) == "table" and barsMod.actionbars[id]
-            if changed and liveBar and type(liveBar.ApplyConfig) == "function" then
-                local ok = pcall(liveBar.ApplyConfig, liveBar, barConfig)
-                if not ok then liveOK = false end
-            end
-        end
-    end
-
-    -- Bartender4 Options > Bars > Out of Range Indicator > Full Button Mode.
-    -- Use the same live refresh method as Bartender's own options panel.
+    -- Official Bartender setting: Options > Out of Range Indicator >
+    -- Full Button Mode. Requires live button configuration refresh.
     bartender.db.profile.outofrange = "button"
     if bartender.Bar and type(bartender.Bar.ForAll) == "function" then
-        local ok = pcall(bartender.Bar.ForAll, bartender.Bar, "UpdateButtonConfig")
-        if not ok then liveOK = false end
-    else
-        liveOK = false
-    end
-
-    local artConfig = artMod.db.profile
-    artConfig.enabled = false
-    if type(artMod.IsEnabled) == "function" and artMod:IsEnabled() then
-        if type(artMod.Disable) ~= "function" then
-            liveOK = false
-        else
-            local ok = pcall(artMod.Disable, artMod)
-            if not ok then liveOK = false end
+        if not pcall(bartender.Bar.ForAll, bartender.Bar, "UpdateButtonConfig") then
+            failures[#failures + 1] = "range update"
         end
+    else
+        failures[#failures + 1] = "range update ontbreekt"
     end
 
-    if not liveOK then
-        say("Bartender-instellingen opgeslagen, maar live refresh deels mislukt. Probeer /reload buiten combat.")
-        -- They are saved in Bartender's own AceDB, so do not repeatedly
-        -- fight the user's UI every login if one live update fails.
+    -- Use the official Bartender module toggle (not a fake Blizzard UI
+    -- visibility CVar). This hides the art/gryphons without affecting spells.
+    if type(art.ToggleModule) == "function" then
+        if not pcall(art.ToggleModule, art, nil, false) then
+            failures[#failures + 1] = "Blizzard Art toggle"
+        end
+    else
+        failures[#failures + 1] = "Blizzard Art toggle ontbreekt"
     end
-    saved[guid] = version
-    say("Bartender4: Blizzard Art uit, padding 0 op " .. updated
-        .. " bars, lege slots zichtbaar op " .. grids
-        .. " bars, out of range = volledig rood icoon.")
+    if type(art.IsEnabled) == "function" and art:IsEnabled() then
+        failures[#failures + 1] = "Blizzard Art nog aan"
+    end
+
+    if #failures > 0 then
+        if not warned then
+            warned = true
+            say("Bartender-setup niet volledig: " .. table.concat(failures, ", ")
+                .. ". Probeer /fc bartender apply buiten combat.")
+        end
+        return -- Do not mark the setup complete when any part failed.
+    end
+
+    saved[guid] = revision
+    say("Bartender: bars 1/3/4/5/6 aan, lege knoppen zichtbaar, Blizzard Art uit en out of range = volledig icoon.")
 end
 
 function FC:BartenderCommand(cmd)
-    local saved, guid = getSaved(), getGuid()
-    if cmd == "status" then
-        local hasBT = getBartender() ~= nil
-        say("Bartender4: " .. (hasBT and "geladen" or "niet geladen")
-            .. "; setup: " .. ((saved and guid and saved[guid] == version)
-            and "uitgevoerd" or "nog niet uitgevoerd") .. ".")
-    elseif cmd == "apply" then
+    if cmd == "apply" then
+        warned = false
         applyOnce(true)
+    elseif cmd == "status" then
+        local bartender, bars, art = ready()
+        if not bartender then
+            say("Bartender: " .. (getBartender() and "geladen maar nog niet klaar" or "niet geladen") .. ".")
+            return
+        end
+        local states = {}
+        for _, id in ipairs(requiredBars) do
+            local cfg = bars.db.profile.actionbars[id]
+            local live = bars.actionbars[id]
+            states[#states + 1] = id .. "="
+                .. ((type(cfg) == "table" and cfg.enabled and live and not live.disabled) and "aan" or "uit")
+                .. ((type(cfg) == "table" and cfg.showgrid) and "+grid" or "")
+        end
+        local saved, guid = getSaved(), getGuid()
+        say("Bartender bars: " .. table.concat(states, ", "))
+        say("Blizzard Art=" .. (art:IsEnabled() and "aan" or "uit")
+            .. ", range=" .. tostring(bartender.db.profile.outofrange)
+            .. ", setup=" .. ((saved and guid and saved[guid] == revision) and "uitgevoerd" or "niet voltooid") .. ".")
+        if type(HasAction) == "function" then
+            local count = 0
+            for slot = 1, 12 do
+                local ok, has = pcall(HasAction, slot)
+                if ok and has then count = count + 1 end
+            end
+            say("Blizzard action slots 1-12 bevatten " .. count .. " abilities/items (geen aanpassingen door ForeverCore).")
+        end
     else
         say("/fc bartender status | /fc bartender apply")
     end
