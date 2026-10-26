@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.18-beta — 2026-10-26
+
+- Add a dedicated `/fc layout capture` command to snapshot the complete, currently configured Bartender4 AceDB profile from Dien Warr into the account-wide `FC Dien Warr Snapshot` profile. Safely restore the source profile after copying and keep all action slot contents/class spells untouched.
+- Capture the active Blizzard Edit Mode layout. Reuse its exact account layout by name; if character-only, create an account-wide duplicate through Blizzard's own layout manager when available.
+- Automatically select both snapshots for characters first seen after capture. Preserve existing characters, with optional manual `/fc layout apply`.
+- Add `/fc layout status`, screen-resolution readback, and stop the previous automatic Bartender defaults from overwriting the new captured layout.
+- Real game client capture is needed: screenshot pixel positions alone are insufficient to reconstruct complete saved UI profiles.
+
+
 ## 0.3.17-beta — 2026-10-26
 
 - Fix Bartender4 integration being skipped entirely: LibStub is a callable table rather than a Lua function. Resolve the real Bartender4 addon and wait until the Forever preset has finished initializing.
