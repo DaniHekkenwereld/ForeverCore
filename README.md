@@ -4,12 +4,12 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.16-beta
+## Included in v0.3.17-beta
 
-- **Always-visible action bars:** enable the four extra Blizzard bars on new characters, request always-show for empty buttons, and enable Bartender's Button Grid on configured bars. Use `/reload` after initial Blizzard bar setup. Previously configured Blizzard bar selection is unchanged.
+- **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - **Cooldown numbers enabled** on action buttons and **Blizzard's Cooldown Manager enabled**, using the verified client CVars `countdownForCooldowns=1` and `cooldownViewerEnabled=1` (normal CVar restrictions apply).
-- **Bartender4 optional initialization:** set Blizzard Art **off**, padding **0**, Button Grid **on** (including empty slots), and Out of Range Indicator to **Full Button Mode** (whole icon turns red). Keep scale, positions, alpha, number of rows, fade/hide rules and keybindings untouched. All Bartender UI changes are deferred until outside combat.
+- **Bartender4 initialization:** resolves callable-table `LibStub` correctly, waits for Bartender's Forever preset, then sets Blizzard Art **off**, padding **0**, Button Grid **on**, opacity **100%**, no fade/hide, and Out of Range Indicator **Full Button Mode**. Bar positions, paging, ability assignments and keybindings are untouched. All UI writes are performed out of combat.
 - **One-time chat tabs on each character:** `Party` for Guild, Party, Raid (including leader and raid warnings); `Whispers` for WoW and Battle.net whispers only. No Battle Shout / pre-pull reminder remains.
 - Manually switch between tank, Fury, and Arms profiles.
 - Raid debuff display: **Sunder Armor** stacks (up to 5), **Demoralizing Shout**, **Thunder Clap** on your hostile target. If combat auras are secret, status is unknown (`?`), never falsely marked missing.
@@ -105,7 +105,7 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | Nameplate range | Request 60 yards (server cap may be lower) |
 | Player outline (Outline Mode) | On / High (`Outline=2`, renderer `graphicsOutlineMode=2` when accessible) |
 | Player self-highlight | Always enabled with outline (`findYourselfAnywhere=1`, `findYourselfModeOutline=1`) |
-| Bottom Left, Bottom Right, Right 1 and Right 2 | **On, once per new character**; always-show empty buttons requested, existing bar selection unchanged; `/reload` to display |
+| Bottom Left, Bottom Right, Right 1 and Right 2 | Enabled as Bartender bars 6, 5, 3, 4 respectively (plus main bar 1). All have visible empty buttons; Blizzard's protected actionbar toggles are not modified. |
 
 ## New self-outline defaults (v0.3.13)
 
@@ -122,11 +122,11 @@ On login, ForeverCore requests these built-in Blizzard client settings:
 
 The native Cooldown Manager is controlled by Blizzard. You can rearrange it in Edit Mode and configure tracked spells using `/cdm`. Some Forever client builds may restrict addon CVar writes; `/fc setup status` reports the actual readback.
 
-**If Bartender4 is installed**, the `BartenderSetup.lua` module obtains the live Bartender4 AceAddon configuration and sets the **Blizzard Art module disabled**, **each configured actionbar's padding to 0**, **Button Grid enabled**, and **Out of Range Indicator = Full Button Mode** (`outofrange = "button"`). Scale, dimensions, placements, enabled bar choices, keybinds and fade/hide rules remain unchanged. The change runs **once per character per preset revision**, outside combat. Bartender4 is an optional dependency; nothing is modified if it is absent. Use `/fc bartender status` to inspect or `/fc bartender apply` for an explicit reapply if you switch profiles.
+**If Bartender4 is installed**, ForeverCore now correctly obtains the live Bartender4 addon (LibStub is a callable table), waits for the Forever preset to finish and then enables bars 1/3/4/5/6 with Bartender's own methods. It sets Button Grid on, opacity to 100%, no fade/hide, padding to 0, Blizzard Art off and Out of Range Indicator to Full Button Mode. Bar position, paging, number of buttons, button offset, keybinds and spell/action assignments are not changed. Runs outside combat once per character per revision; retries if initialization is incomplete. Use `/fc bartender status` for live bar/module/range diagnostics and a count of the original Blizzard action slots 1–12; use `/fc bartender apply` to retry.
 
 **Important:** Bartender4 maintains its own action buttons, and its keybinding behavior may differ from Blizzard's default bars. In particular, Bartender's documentation says extra bars may require its own KeyBound binding setup via `/kb`. Our default Blizzard actionbar keybinds must be checked after installing Bartender4. Do not assume all 47 additional binds will transfer automatically.
 
-This Bartender feature does **not** change Blizzard actionbar visibility. Version 0.3.15 separately sets the four Blizzard extra bars **once on a new character only**, without calling protected UI refresh functions.
+Version 0.3.17 no longer calls Blizzard's protected `SetActionBarToggles` at all. All five main/extra Bartender bars are enabled through Bartender's own API. Blizzard's options remain manual when Bartender is not in use.
 
 ## Actionbar combat safety (v0.3.11; historical behavior)
 
