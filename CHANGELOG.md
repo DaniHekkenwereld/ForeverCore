@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.19-beta — 2026-10-26
+
+- Extend `/fc layout capture` on Dien Warr to save the active Questie AceDB profile (including tracker position, dimensions and options) and Details!' live window layout (including position, sizes and skins) alongside Bartender4 and Blizzard Edit Mode.
+- Use Questie's own `SetProfile` and `CopyProfile` to snapshot only `db.profile`, never `db.char` quest tracking or progress. Restore Dien Warr's original Questie profile after capture.
+- Use Details!' official `SaveProfile(name)` and `ApplyProfile(name)` methods; force the snapshot's `profile_save_pos` to retain exact source window positions, without copying combat logs and character data.
+- Apply both additional addon UI profiles automatically to new characters, with bounded retries when addon initialization is delayed. Existing characters require manual `/fc layout apply`; per-addon revision markers prevent repeated profile resets.
+- Add extra UI status lines and optional TOC dependency ordering. Requires testing in the installed versions of Questie, Details! and Forever client.
+
+
 ## 0.3.18-beta — 2026-10-26
 
 - Add a dedicated `/fc layout capture` command to snapshot the complete, currently configured Bartender4 AceDB profile from Dien Warr into the account-wide `FC Dien Warr Snapshot` profile. Safely restore the source profile after copying and keep all action slot contents/class spells untouched.
