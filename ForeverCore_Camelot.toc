@@ -2,8 +2,8 @@
 ## Title: ForeverCore
 ## Notes: WoW Forever beta - Warrior tools and passive gameplay recorder
 ## Author: Community prototype
-## Version: 0.3.18-beta
-## OptionalDeps: Bartender4
+## Version: 0.3.19-beta
+## OptionalDeps: Bartender4, Questie, Details
 ## SavedVariables: ForeverCoreDB
 Core.lua
 RaidWarnings.lua
@@ -13,3 +13,4 @@ AccountSetup.lua
 ChatSetup.lua
 BartenderSetup.lua
 LayoutTemplate.lua
+AddonProfiles.lua
