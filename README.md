@@ -4,12 +4,12 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.15-beta
+## Included in v0.3.16-beta
 
-- **New-character action bars:** enable Bottom Left, Bottom Right, Right 1 and Right 2, including empty buttons, once per character. Use `/reload` to show the bars. Previously configured characters are unchanged.
+- **Always-visible action bars:** enable the four extra Blizzard bars on new characters, request always-show for empty buttons, and enable Bartender's Button Grid on configured bars. Use `/reload` after initial Blizzard bar setup. Previously configured Blizzard bar selection is unchanged.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - **Cooldown numbers enabled** on action buttons and **Blizzard's Cooldown Manager enabled**, using the verified client CVars `countdownForCooldowns=1` and `cooldownViewerEnabled=1` (normal CVar restrictions apply).
-- **Bartender4 optional initialization:** for each character, if Bartender4 is installed, set Blizzard Art **off** and **padding 0** on Bartender actionbars. Leave scale, positions, alpha, number of rows, visibility and keybindings untouched. All Bartender UI changes are deferred until outside combat.
+- **Bartender4 optional initialization:** set Blizzard Art **off**, padding **0**, Button Grid **on** (including empty slots), and Out of Range Indicator to **Full Button Mode** (whole icon turns red). Keep scale, positions, alpha, number of rows, fade/hide rules and keybindings untouched. All Bartender UI changes are deferred until outside combat.
 - **One-time chat tabs on each character:** `Party` for Guild, Party, Raid (including leader and raid warnings); `Whispers` for WoW and Battle.net whispers only. No Battle Shout / pre-pull reminder remains.
 - Manually switch between tank, Fury, and Arms profiles.
 - Raid debuff display: **Sunder Armor** stacks (up to 5), **Demoralizing Shout**, **Thunder Clap** on your hostile target. If combat auras are secret, status is unknown (`?`), never falsely marked missing.
@@ -42,7 +42,7 @@ The old v0.3.5 layout was hard to memorize. The **new default uses the same 12 k
 
 | Row | Blizzard bar | Modifier | Twelve buttons, left to right |
 | --- | --- | --- | --- |
-| 1 | Main | None | `1` `2` `3` `4` `Q` `E` `R` `F` `Z` **(slot 10 unbound)** `C` `V` |
+| 1 | Main | None | `1` `2` `3` `4` `G` `MouseWheelDown` `R` `F` `Z` **(slot 10 unbound)** `C` `V` |
 | 2 | Bottom Left | Shift | `Shift+1` `Shift+2` `Shift+3` `Shift+4` `Shift+Q` `Shift+E` `Shift+R` `Shift+F` `Shift+Z` `Shift+X` `Shift+C` `Shift+V` |
 | 3 | Bottom Right | Alt | `Alt+1` `Alt+2` `Alt+3` `Alt+4` `Alt+Q` `Alt+E` `Alt+R` `Alt+F` `Alt+Z` `Alt+X` `Alt+C` `Alt+V` |
 | 4 | Right | Alt+Shift | `Alt+Shift+1` `Alt+Shift+2` `Alt+Shift+3` `Alt+Shift+4` `Alt+Shift+Q` `Alt+Shift+E` `Alt+Shift+R` `Alt+Shift+F` `Alt+Shift+Z` `Alt+Shift+X` `Alt+Shift+C` `Alt+Shift+V` |
@@ -51,7 +51,7 @@ The old v0.3.5 layout was hard to memorize. The **new default uses the same 12 k
 
 **Example:** `R` is row 1 / slot 7, `Shift+R` row 2 / slot 7, `Alt+R` row 3 / slot 7 and `Alt+Shift+R` row 4 / slot 7. The game bars remain visually where Blizzard puts them; the **Right** bar is normally vertical. ForeverCore binds slots, not UI placement or ability assignment.
 
-The base keys were chosen near WASD but deliberately avoid **W/A/S/D (movement)**, G (dedicated Berserker Stance), Tab, Space and the dedicated mouse controls. Assigning Q and E to abilities will replace WoW's default strafe-left / strafe-right on those keys; A/D can still be used for strafing if configured. Shift+Alt can also conflict with a Windows language-switch shortcut; turn off or change that OS shortcut if the combination switches layouts.
+The base keys were chosen near WASD and avoid **W/A/S/D (movement)**, Tab, Space and the dedicated mouse controls. The unmodified main-row `G` and `MouseWheelDown` are now **actionbar buttons 5 and 6** (not direct Berserker Stance or Heroic Strike bindings); modifier rows keep their previous keys. Assigning Q and E to abilities will replace WoW's default strafe-left / strafe-right on those keys; A/D can still be used for strafing if configured. Shift+Alt can also conflict with a Windows language-switch shortcut; turn off or change that OS shortcut if the combination switches layouts.
 
 ### Warrior keybinds stay fixed
 
@@ -59,16 +59,16 @@ The base keys were chosen near WASD but deliberately avoid **W/A/S/D (movement)*
 | --- | --- |
 | Mouse thumb `BUTTON4` | Battle Stance |
 | Mouse thumb `BUTTON5` | Defensive Stance |
-| `G` | Berserker Stance |
+| `G` | Main actionbar slot 5 (place Berserker Stance there manually if desired) |
 | Middle mouse `BUTTON3` | Taunt |
-| Mousewheel down | Heroic Strike |
+| Mousewheel down | Main actionbar slot 6 (place Heroic Strike there manually if desired) |
 | Mousewheel up | Cleave |
 
-No Warrior mouse or stance binding overlaps the 48 actionbar keys. Other classes receive the same 48 actionbar binds but not Warrior-specific abilities.
+Warrior still receives Battle/Defensive stance on mouse 4/5, middle-mouse Taunt and wheel-up Cleave. G and wheel-down now belong to main actionbar slots 5/6 for every class. The Shift, Alt and Alt+Shift modifier rows have not changed.
 
 ### Migrating and controlling the layout
 
-The preset revision is bumped, so v0.3.4 and v0.3.5 characters automatically receive the new layout on their next login. Known **old default keybinds** are removed only when the character had the earlier ForeverCore preset and those keys still perform their exact old actions; keys manually repurposed since then are preserved. Backups of previous bindings remain available.
+The initial preset was introduced after v0.3.4 and v0.3.5. In v0.3.16, existing v0.3.15 characters only migrate main slots 5/6 from Q/E to G/MouseWheelDown if the previous bindings are still intact; custom bindings and modifier rows are preserved. Known **old default keybinds** are removed only when the character had the earlier ForeverCore preset and those keys still perform their exact old actions; keys manually repurposed since then are preserved. Backups of previous bindings remain available.
 
 - `/fc setup layout` shows the four rows.
 - `/fc setup apply` applies the current layout manually (out of combat).
@@ -105,7 +105,7 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | Nameplate range | Request 60 yards (server cap may be lower) |
 | Player outline (Outline Mode) | On / High (`Outline=2`, renderer `graphicsOutlineMode=2` when accessible) |
 | Player self-highlight | Always enabled with outline (`findYourselfAnywhere=1`, `findYourselfModeOutline=1`) |
-| Bottom Left, Bottom Right, Right 1 and Right 2 | **On, once per new character**; existing characters unchanged; `/reload` to display |
+| Bottom Left, Bottom Right, Right 1 and Right 2 | **On, once per new character**; always-show empty buttons requested, existing bar selection unchanged; `/reload` to display |
 
 ## New self-outline defaults (v0.3.13)
 
@@ -122,7 +122,7 @@ On login, ForeverCore requests these built-in Blizzard client settings:
 
 The native Cooldown Manager is controlled by Blizzard. You can rearrange it in Edit Mode and configure tracked spells using `/cdm`. Some Forever client builds may restrict addon CVar writes; `/fc setup status` reports the actual readback.
 
-**If Bartender4 is installed**, the new `BartenderSetup.lua` module obtains the live Bartender4 AceAddon configuration and sets the **Blizzard Art module disabled** and **each available actionbar's padding to 0**. Scale, dimensions, placements, visibility, enabled bars, keybinds, and fade settings remain unchanged. The change runs **once per character**, outside combat. Bartender4 is an optional dependency; nothing is modified if it is absent. Use `/fc bartender status` to inspect or `/fc bartender apply` for an explicit reapply if you switch profiles.
+**If Bartender4 is installed**, the `BartenderSetup.lua` module obtains the live Bartender4 AceAddon configuration and sets the **Blizzard Art module disabled**, **each configured actionbar's padding to 0**, **Button Grid enabled**, and **Out of Range Indicator = Full Button Mode** (`outofrange = "button"`). Scale, dimensions, placements, enabled bar choices, keybinds and fade/hide rules remain unchanged. The change runs **once per character per preset revision**, outside combat. Bartender4 is an optional dependency; nothing is modified if it is absent. Use `/fc bartender status` to inspect or `/fc bartender apply` for an explicit reapply if you switch profiles.
 
 **Important:** Bartender4 maintains its own action buttons, and its keybinding behavior may differ from Blizzard's default bars. In particular, Bartender's documentation says extra bars may require its own KeyBound binding setup via `/kb`. Our default Blizzard actionbar keybinds must be checked after installing Bartender4. Do not assume all 47 additional binds will transfer automatically.
 
