@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.17-beta — 2026-10-26
+
+- Fix Bartender4 integration being skipped entirely: LibStub is a callable table rather than a Lua function. Resolve the real Bartender4 addon and wait until the Forever preset has finished initializing.
+- Enable Bartender's main bar (ID 1), two right bars (IDs 3/4), and two lower bars (IDs 5/6) using its own `EnableBar` API; enable Button Grid and disable alpha fade/hide so empty buttons stay visible. Do not change paging, action offsets, number of buttons, positions, or spell/action assignments.
+- Turn off Bartender's Blizzard Art module with its real `ToggleModule` API, not by only writing a setting. Apply Full Button Mode (`outofrange = "button"`) and refresh buttons.
+- Remove `SetActionBarToggles` entirely from ForeverCore; this protected UI write previously caused disappearing bars and may conflict with Bartender. Keep original starter action slots untouched.
+- Do not save completion when Bartender is not ready or a live setting fails. Add useful `/fc bartender status` diagnostics, including action-slot occupancy.
+- Requires validation in the user's actual WoW Forever client and Bartender4 build; no claim of successful in-game test.
+
+
 ## 0.3.16-beta — 2026-10-26
 
 - Keep Blizzard empty action buttons visible with `alwaysShowActionBars=1` when the client exposes the CVar. New-character initialization already explicitly passes `alwaysShow=true` to the eight-argument `SetActionBarToggles` API.
