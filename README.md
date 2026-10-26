@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.18-beta
+## Included in v0.3.19-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -28,11 +28,22 @@ On **Dien Warr**, finish adjusting Bartender4 and Blizzard Edit Mode, click **Sa
 
 ForeverCore creates a dedicated **FC Dien Warr Snapshot** Bartender AceDB profile, copying all Bartender module settings (including bar positions, scales, fades, window positions and visible bars) using AceDB's `CopyProfile` API. It then returns Dien Warr to the original Bartender profile. No action slots or class spells are copied, moved or cleared. The exact bar layout is used on new characters by selecting the snapshot AceDB profile.
 
-The current Blizzard Edit Mode layout is remembered by name. If it is a **character-only** layout, ForeverCore attempts to create a separate account-wide copy via Blizzard's layout manager, called **FC Dien Layout**, and reports a failure if that is not possible. The shared account layout contains the precise Blizzard-managed HUD positions, sizes and settings. These settings are not inferred from screenshots. Separate addon UI layouts (e.g. other addons' own frames, Details!, quest addons) are not copied by this feature.
+The current Blizzard Edit Mode layout is remembered by name. If it is a **character-only** layout, ForeverCore attempts to create a separate account-wide copy via Blizzard's layout manager, called **FC Dien Layout**, and reports a failure if that is not possible. The shared account layout contains the precise Blizzard-managed HUD positions, sizes and settings. These settings are not inferred from screenshots. Other addons beyond Bartender4, Questie and Details! are not copied by this feature.
 
-New characters created **after the capture** automatically use both profiles, leaving starter skills, spells, action slots and other existing characters alone. You can also run `/fc layout apply` on an existing character to opt in manually, or `/fc layout status` to inspect the saved profile. This changes Bartender4 and Edit Mode only; actionbar keybind auto-setup remains controlled by AccountSetup.lua.
+New characters created **after the capture** automatically use the captured Bartender4, Edit Mode, Questie and Details! profiles where those addons are installed, leaving starter skills, spells, action slots and other existing characters alone. You can also run `/fc layout apply` on an existing character to opt in manually, or `/fc layout status` to inspect the saved profile. This changes Bartender4 and Edit Mode only; actionbar keybind auto-setup remains controlled by AccountSetup.lua.
 
 Use the same monitor resolution and WoW UI scale for pixel-identical placement. The feature records the source physical screen size to help diagnose discrepancies. Bartender and Edit Mode must be present in this version of WoW Forever. Client validation is still required.
+
+## Questie and Details! UI snapshot (v0.3.19)
+
+**Also included in `/fc layout capture`:**
+
+- **Questie:** the complete AceDB **profile**, including `TrackerLocation`, tracker dimensions, scale, appearance and options, stored as `FC Dien Warr Questie`. Questie `db.char` (tracked quests and quest progress) is never copied.
+- **Details!:** its native `SaveProfile("FC Dien Warr Details")` saves the CURRENT live Details! window positions, sizes, skin and appearance. The snapshot enables `profile_save_pos` so its window positions are restored on new characters. Details combat records, character history and combat segments are not copied.
+
+Use `/fc layout capture` again on **Dien Warr** after installing this update. Both addons need to be enabled and loaded. Use `/fc layout status` to confirm that **all four** UI components are recorded (Bartender4, Edit Mode, Questie and Details!). If one addon is missing, the command says so; its configuration is not fabricated from screenshots.
+
+A **new** character automatically selects the saved Questie AceDB profile and calls Details!' native `ApplyProfile`, without changing quests or combat history. For an already-created character, `/fc layout apply` opts in. The copy uses the original screen resolution and UI scale. Questie or Details! initialization may require a `/reload` after the first apply.
 
 ## Installation
 
