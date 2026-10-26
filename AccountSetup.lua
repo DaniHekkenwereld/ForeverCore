@@ -1,5 +1,5 @@
 -- ForeverCore: account-wide onboarding for new characters.
--- Includes six known Warrior bindings for a fresh Forever character; no existing main is required.
+-- Includes four non-conflicting Warrior-specific bindings; no existing main is required.
 -- An optional captured profile still overrides the built-in starter, when the user wants that.
 -- Binding writes and secure CVars are only attempted out of combat.
 local FC = _G.ForeverCore
@@ -12,6 +12,7 @@ local pending = false
 local warned = {}
 local desiredCVars = {
     {"autoLootDefault", "1"},
+    {"alwaysShowActionBars", "1"}, -- keep empty Blizzard action buttons visible
     {"nameplateShowEnemies", "1"},
     {"nameplateShowAll", "1"},
     {"nameplateMaxDistance", "60"},
@@ -28,10 +29,13 @@ local friendlyCVars = {"nameplateShowFriends", "nameplateShowFriendlyPlayers"}
 
 -- Ergonomic 4-layer preset: same 12 physical keys in the same 12 slots.
 -- Rows 1/2/3/4 use no modifier, Shift, Alt and Shift+Alt.
--- No WASD, Tab, Space, G, or dedicated Warrior mouse keys are remapped.
+-- Main row alone uses G and Mouse Wheel Down for buttons 5/6.
+-- Modifier rows retain the original base keys without changes.
 -- Right Action Bar is still vertical in Blizzard's default layout.
-local starterRevision = "ergonomic-4layer-20261025-v5-restore-movedown"
+local starterRevision = "ergonomic-4layer-20261026-v6-main-g-wheel"
+local previousStarterRevision = "ergonomic-4layer-20261025-v5-restore-movedown"
 local baseKeys = {"1", "2", "3", "4", "Q", "E", "R", "F", "Z", "X", "C", "V"}
+local mainKeys = {"1", "2", "3", "4", "G", "MOUSEWHEELDOWN", "R", "F", "Z", "X", "C", "V"}
 local starterRows = {
     {label = "Rij 1 / Main - normale toetsen", prefix = "ACTIONBUTTON", modifier = ""},
     {label = "Rij 2 / Bottom Left - Shift", prefix = "MULTIACTIONBAR1BUTTON", modifier = "SHIFT-"},
@@ -40,7 +44,8 @@ local starterRows = {
 }
 local screenshotBindings = {}
 for _, row in ipairs(starterRows) do
-    for index, key in ipairs(baseKeys) do
+    local rowKeys = row.modifier == "" and mainKeys or baseKeys
+    for index, key in ipairs(rowKeys) do
         -- The bare X is Sit/Move Down, not an actionbar key. Keep modifier
         -- combinations such as Shift+X, Alt+X, and Shift+Alt+X.
         if row.modifier ~= "" or key ~= "X" then
@@ -119,10 +124,9 @@ local legacyStarterBindings = {
 local warriorStarter = {
     {"BUTTON4", "SHAPESHIFTBUTTON1"},    -- Battle Stance
     {"BUTTON5", "SHAPESHIFTBUTTON2"},    -- Defensive Stance
-    {"G", "SHAPESHIFTBUTTON3"},          -- Berserker Stance
     {"BUTTON3", "SPELL Taunt"},          -- middle mouse
-    {"MOUSEWHEELDOWN", "SPELL Heroic Strike"},
     {"MOUSEWHEELUP", "SPELL Cleave"},
+    -- G and MOUSEWHEELDOWN belong to main actionbar buttons 5 and 6.
 }
 
 local function say(message)
@@ -381,26 +385,44 @@ local function applyBindings(force)
     if not force and s.applied[guid] == revision then return end
     if s.excluded and s.excluded[guid] and not force then return end
 
-    -- Never re-import the whole built-in layout when an existing character
-    -- logs in after an addon update: preserve all edited keybinds.
-    -- Only repair X if it still points to the exact old ForeverCore mapping.
+    -- Never re-import modifier rows or the whole preset on an existing
+    -- character. Migrate only the two main row slots on the previous
+    -- built-in revision, provided their original keybinds are still intact.
     if not force and starter and s.applied[guid] ~= nil then
-        local oldAction
-        if type(GetBindingAction) == "function" then
-            local ok, action = pcall(GetBindingAction, "X")
-            if ok and type(action) == "string" then oldAction = action end
+        local function currentAction(key)
+            if type(GetBindingAction) ~= "function" then return nil end
+            local ok, action = pcall(GetBindingAction, key)
+            if ok and type(action) == "string" then return action end
+            return nil
         end
-        if oldAction == "ACTIONBUTTON10" then
-            if not setKey("X", "SITORSTAND") then
+        local restoreX = currentAction("X") == "ACTIONBUTTON10"
+        local migrateMain = s.applied[guid] == previousStarterRevision
+            and currentAction("Q") == "ACTIONBUTTON5"
+            and currentAction("E") == "ACTIONBUTTON6"
+            and (currentAction("G") == "" or currentAction("G") == "SHAPESHIFTBUTTON3")
+            and (currentAction("MOUSEWHEELDOWN") == "" or currentAction("MOUSEWHEELDOWN") == "SPELL Heroic Strike")
+        if restoreX or migrateMain then
+            if restoreX and not setKey("X", "SITORSTAND") then
                 say("X kon niet worden hersteld. Probeer /fc setup apply.")
                 return
             end
+            if migrateMain then
+                -- Only unbind the two unchanged former main-row keys.
+                -- The Shift, Alt and Shift+Alt bindings are never touched.
+                if not setKey("Q", nil) or not setKey("E", nil)
+                    or not setKey("G", "ACTIONBUTTON5")
+                    or not setKey("MOUSEWHEELDOWN", "ACTIONBUTTON6") then
+                    say("Nieuwe hoofdbar-toetsen konden niet worden ingesteld. Probeer /fc setup apply.")
+                    return
+                end
+            end
             local saved, result = pcall(SaveBindings, 2)
             if not saved or result == false then
-                say("X = Sit/Move Down kon niet worden opgeslagen.")
+                say("Hoofdbar-keybinds konden niet worden opgeslagen.")
                 return
             end
-            say("X hersteld naar Sit/Move Down; overige keybinds ongemoeid.")
+            if restoreX then say("X hersteld naar Sit/Move Down.") end
+            if migrateMain then say("Hoofdbar aangepast: G = 5 en Scroll Down = 6; modifiers ongewijzigd.") end
         end
         s.applied[guid] = revision
         return
@@ -426,8 +448,8 @@ local function applyBindings(force)
         -- Restore Blizzard's standard X = Sit/Move Down. On existing
         -- ForeverCore characters this replaces the old X = ACTIONBUTTON10.
         add("X", "SITORSTAND")
-        -- Preserve the user's existing Warrior-specific stance / mouse prefs.
-        -- These six take priority where a screenshot hotkey conflicts.
+        -- The four remaining Warrior-specific bindings do not overlap
+        -- the new main-row G and Mouse Wheel Down slots.
         if characterClass == "WARRIOR" then
             for _, pair in ipairs(warriorStarter) do
                 add(pair[1], pair[2])
@@ -530,7 +552,8 @@ local function printStarterLayout()
     say("4 keybind-rijen: 47 actionbar-toetsen. X = Sit/Move Down (geen actionbar).")
     for _, row in ipairs(starterRows) do
         local keys = {}
-        for _, base in ipairs(baseKeys) do
+        local rowKeys = row.modifier == "" and mainKeys or baseKeys
+        for _, base in ipairs(rowKeys) do
             if row.modifier ~= "" or base ~= "X" then
                 keys[#keys + 1] = row.modifier .. base
             end
@@ -538,7 +561,7 @@ local function printStarterLayout()
         say(row.label .. ": " .. table.concat(keys, ", "))
     end
     say("X is Sit/Move Down; Shift+X, Alt+X en Shift+Alt+X blijven op de extra actionbars.")
-    say("Warrior: G Berserker / muis 4-5 stances / midden Taunt / wiel down Heroic Strike / wiel up Cleave.")
+    say("Warrior: G en wiel down = hoofdbar 5/6; muis 4-5 stances / midden Taunt / wiel up Cleave.")
     say("Rij 4 is de standaard verticale Right Bar; addon verandert geen balkpositie.")
 end
 function FC:SetupCommand(raw)
