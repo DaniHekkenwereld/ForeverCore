@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.16-beta — 2026-10-26
+
+- Keep Blizzard empty action buttons visible with `alwaysShowActionBars=1` when the client exposes the CVar. New-character initialization already explicitly passes `alwaysShow=true` to the eight-argument `SetActionBarToggles` API.
+- For Bartender4, enable `showgrid` on existing configured bars (including empty buttons) and set `Bartender4.db.profile.outofrange = "button"` for Full Button Mode; refresh the live buttons using Bartender's native `UpdateButtonConfig` method.
+- Main bar now uses `1 2 3 4 G MouseWheelDown R F Z [X reserved] C V`. The Shift, Alt and Shift+Alt rows remain unchanged. The former direct Warrior G = Berserker Stance and MouseWheelDown = Heroic Strike binds are removed in favor of the two main actionbar slots.
+- Existing characters on v0.3.15 receive only a guarded Q/E -> G/MouseWheelDown main-row migration if the original bindings are intact. Do not reset other keybinds. Bartender defaults are versioned to apply once to existing characters.
+- Still requires testing with WoW Forever and the installed Bartender4 version.
+
+
 ## 0.3.15-beta — 2026-10-26
 
 - On the first ForeverCore login of a new character, enable Blizzard Bottom Left, Bottom Right, Right 1, and Right 2 action bars, including empty-button visibility.
