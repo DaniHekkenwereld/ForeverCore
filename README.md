@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.17-beta
+## Included in v0.3.18-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -16,6 +16,23 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 - **Taunt feedback:** warns on a spellcast failure event if the client supplies it and reminds you to verify the boss target when you cast Taunt; **resist/miss cannot be proven** without the combat log.
 - Separate drag-and-edit burst opener macro panel with **4 per spec**, **12 total** (ST threat, AoE threat, ST DPS, AoE DPS), created only when dragged so existing macro slots are not consumed unnecessarily.
 - Generate 15 character-specific Warrior macros without overwriting existing ones. Combo macros are **manual**, with modifier keys for each cooldown.
+
+## Copy Dien Warr's exact UI to future characters (v0.3.18)
+
+On **Dien Warr**, finish adjusting Bartender4 and Blizzard Edit Mode, click **Save** in Edit Mode and exit Edit Mode. Make sure Bartender4 is fully loaded. Then run:
+
+```text
+/fc layout capture
+/fc layout status
+```
+
+ForeverCore creates a dedicated **FC Dien Warr Snapshot** Bartender AceDB profile, copying all Bartender module settings (including bar positions, scales, fades, window positions and visible bars) using AceDB's `CopyProfile` API. It then returns Dien Warr to the original Bartender profile. No action slots or class spells are copied, moved or cleared. The exact bar layout is used on new characters by selecting the snapshot AceDB profile.
+
+The current Blizzard Edit Mode layout is remembered by name. If it is a **character-only** layout, ForeverCore attempts to create a separate account-wide copy via Blizzard's layout manager, called **FC Dien Layout**, and reports a failure if that is not possible. The shared account layout contains the precise Blizzard-managed HUD positions, sizes and settings. These settings are not inferred from screenshots. Separate addon UI layouts (e.g. other addons' own frames, Details!, quest addons) are not copied by this feature.
+
+New characters created **after the capture** automatically use both profiles, leaving starter skills, spells, action slots and other existing characters alone. You can also run `/fc layout apply` on an existing character to opt in manually, or `/fc layout status` to inspect the saved profile. This changes Bartender4 and Edit Mode only; actionbar keybind auto-setup remains controlled by AccountSetup.lua.
+
+Use the same monitor resolution and WoW UI scale for pixel-identical placement. The feature records the source physical screen size to help diagnose discrepancies. Bartender and Edit Mode must be present in this version of WoW Forever. Client validation is still required.
 
 ## Installation
 
