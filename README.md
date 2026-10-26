@@ -4,8 +4,9 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.14-beta
+## Included in v0.3.15-beta
 
+- **New-character action bars:** enable Bottom Left, Bottom Right, Right 1 and Right 2, including empty buttons, once per character. Use `/reload` to show the bars. Previously configured characters are unchanged.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
 - **Cooldown numbers enabled** on action buttons and **Blizzard's Cooldown Manager enabled**, using the verified client CVars `countdownForCooldowns=1` and `cooldownViewerEnabled=1` (normal CVar restrictions apply).
 - **Bartender4 optional initialization:** for each character, if Bartender4 is installed, set Blizzard Art **off** and **padding 0** on Bartender actionbars. Leave scale, positions, alpha, number of rows, visibility and keybindings untouched. All Bartender UI changes are deferred until outside combat.
@@ -75,7 +76,7 @@ The preset revision is bumped, so v0.3.4 and v0.3.5 characters automatically rec
 - `/fc setup capture` optionally saves your own full custom profile. A captured profile takes priority over the built-in layout.
 - `/fc setup bindings on/off` and `/fc setup settings on/off` toggle these automatic behaviors.
 
-Automatic settings remain: auto loot and nameplates/range where the beta API permits them. **Blizzard actionbar visibility must now be enabled manually in the game's Options > Action Bars.** ForeverCore never writes protected actionbar visibility settings at login.
+Automatic settings remain: auto loot and nameplates/range where the beta API permits them. **On new characters only**, ForeverCore also records all four default extra Blizzard action bars as enabled using the eight-argument API, including the always-show flag. It never forces an immediate protected-frame refresh: use `/reload` after the initial login. Characters already initialized by an earlier ForeverCore version keep their existing actionbar settings and can adjust them in Options > Action Bars.
 
 **Fixed after first in-game screenshot:** Old Blizzard keys (such as `5` for main-bar slot 5) could remain attached as a second binding alongside the new preset key (`Q`). The preset now removes extra bindings from its 48 target actionbar slots before assigning one key per slot. Existing backups remain available with `/fc setup restore`. The pre-pull panel also no longer demands Defensive Stance of an under-level-10 Warrior; spell-known APIs are consulted on higher-level characters where available.
 
@@ -104,7 +105,7 @@ The addon binds keys to actionbar button **slots**; it does not assign spells to
 | Nameplate range | Request 60 yards (server cap may be lower) |
 | Player outline (Outline Mode) | On / High (`Outline=2`, renderer `graphicsOutlineMode=2` when accessible) |
 | Player self-highlight | Always enabled with outline (`findYourselfAnywhere=1`, `findYourselfModeOutline=1`) |
-| Bottom Left, Bottom Right, Right 1 and Right 2 | **Manual in WoW Options**; automatic addon changes disabled for combat safety |
+| Bottom Left, Bottom Right, Right 1 and Right 2 | **On, once per new character**; existing characters unchanged; `/reload` to display |
 
 ## New self-outline defaults (v0.3.13)
 
@@ -125,13 +126,13 @@ The native Cooldown Manager is controlled by Blizzard. You can rearrange it in E
 
 **Important:** Bartender4 maintains its own action buttons, and its keybinding behavior may differ from Blizzard's default bars. In particular, Bartender's documentation says extra bars may require its own KeyBound binding setup via `/kb`. Our default Blizzard actionbar keybinds must be checked after installing Bartender4. Do not assume all 47 additional binds will transfer automatically.
 
-This feature does **not** reintroduce Blizzard actionbar visibility writes, which were disabled after combat-related bugs in the Forever beta.
+This Bartender feature does **not** change Blizzard actionbar visibility. Version 0.3.15 separately sets the four Blizzard extra bars **once on a new character only**, without calling protected UI refresh functions.
 
-## Actionbar combat safety (v0.3.11)
+## Actionbar combat safety (v0.3.11; historical behavior)
 
 Screenshots from an actual Forever beta client showed the extra lower actionbar disappearing in combat alongside a Blizzard **interface action blocked by an addon** notice. This is not conclusive proof ForeverCore caused the blocked action, but the previously used `SetActionBarToggles` and `Settings.SetValue` calls were unsafe and have been removed entirely from automatic login/zone behavior. The earlier `SetActionBarToggles` call passed seven values, omitting the optional eighth `alwaysShow` argument. The native API persists values for the next load, not immediate visibility.
 
-**How to recover:** first try `/fc setup bars off` followed by `/reload` on the old installed build. After installing v0.3.11, use WoW's **Options > Action Bars** to enable Bottom Left, Bottom Right, Right 1, and Right 2 manually. If empty slots disappear, try `/console alwaysShowActionBars 1` (outside combat) and `/reload`. The addon no longer edits actionbar visibility even when `/fc setup bars on` is requested; that command prints manual setup instructions.
+**How to recover:** first try `/fc setup bars off` followed by `/reload` on the old installed build. After installing v0.3.11, use WoW's **Options > Action Bars** to enable Bottom Left, Bottom Right, Right 1, and Right 2 manually. If empty slots disappear, try `/console alwaysShowActionBars 1` (outside combat) and `/reload`. The addon did not edit actionbar visibility in versions 0.3.11–0.3.14. Since 0.3.15 it applies the initial setup **only to new characters** with the full eight-argument API, still without protected live UI updates. `/fc setup bars on/off` remains informational; existing characters must use WoW Options.
 
 Existing **48 keybind slots, character-specific backups, auto loot and the Battle Shout icon** remain unchanged. Nameplate-CVar writes from Core now stop after one failed attempt per session rather than retrying on every event. If combat problems persist with ForeverCore disabled, the issue needs diagnosis outside this module as well.
 
