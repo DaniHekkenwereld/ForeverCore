@@ -112,6 +112,11 @@ local function configureBar(bars, id)
 end
 
 local function applyOnce(force)
+    -- Once the user captures Dien Warr's complete Bartender profile, stop
+    -- imposing the old default bar settings on source or future characters.
+    -- LayoutTemplate.lua chooses the recorded AceDB profile instead.
+    local root = FC.GetDatabase and FC:GetDatabase()
+    if not force and root and root.layoutTemplate and root.layoutTemplate.profileName then return end
     if inCombat() then queued = true; return end
     local guid, saved = getGuid(), getSaved()
     if not guid or not saved or (saved[guid] == revision and not force) then return end
