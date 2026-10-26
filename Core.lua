@@ -1,4 +1,4 @@
--- ForeverCore 0.3.17-beta (WoW: Forever Beta / Camelot)
+-- ForeverCore 0.3.18-beta (WoW: Forever Beta / Camelot)
 -- Display and convenience only. Does not automate spells or bypass protected APIs.
 
 local FC = CreateFrame("Frame")
@@ -138,7 +138,7 @@ local function handle(line)
         say("/fc setup [capture|status|apply|restore|bindings|settings]")
         say("/fc plates auto/on/off | /fc mode tank/fury/arms | /fc alerts on/off | /fc taunt on/off")
         say("/fc chat status | /fc chat setup   (Party + Whispers tabs)")
-        say("/fc bartender status | /fc bartender apply")
+        say("/fc bartender status | /fc bartender apply | /fc layout capture/status/apply")
         say("/fc record [status|summary|on|off|native on|native off] | /fc mark <notitie>")
     elseif arg == "record" or arg == "combatlog" or arg == "mark" then
         if FC.RecorderCommand then FC:RecorderCommand(line) else say("Recorder-module ontbreekt.") end
@@ -161,6 +161,12 @@ local function handle(line)
     elseif arg == "mode" and (val == "tank" or val == "fury" or val == "arms") then
         db.profile = val
         say("Warrior-profiel: " .. val .. " (handmatig; geen automatische talentscan).")
+    elseif arg == "layout" then
+        if FC.LayoutTemplateCommand then
+            FC:LayoutTemplateCommand(val)
+        else
+            say("LayoutTemplate.lua is niet geladen.")
+        end
     elseif arg == "bartender" then
         if FC.BartenderCommand then
             FC:BartenderCommand(val)
