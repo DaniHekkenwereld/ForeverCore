@@ -198,6 +198,10 @@ local function capture()
     t.screenWidth = GetPhysicalScreenSize and select(1, GetPhysicalScreenSize()) or nil
     t.screenHeight = GetPhysicalScreenSize and select(2, GetPhysicalScreenSize()) or nil
     t.existing[id] = true
+    -- Collect optional addon UI profiles at the same moment as Bartender.
+    -- Details! exports its live windows; Questie stores tracker positions
+    -- in its AceDB profile. Do not copy their character-specific histories.
+    if FC.CaptureExtraUIProfiles then FC:CaptureExtraUIProfiles(t) end
     say("Layout vastgelegd vanuit " .. t.sourceName .. ": Bartender-profiel '" .. profileName
         .. "', Edit Mode '" .. layoutName .. "'. Nieuwe characters nemen dit automatisch over.")
     say("Abilities en spells worden niet gekopieerd of verwijderd; dat blijft per character.")
@@ -216,6 +220,9 @@ end
 
 local function apply(force)
     if busy or combat() then queued = true; return end
+    -- Manual apply must include optional addon UI profiles even when
+    -- Bartender or Edit Mode have not finished initializing yet.
+    if force and FC.ApplyExtraUIProfiles then FC:ApplyExtraUIProfiles(true) end
     local id = guid()
     local t = db()
     if not id or not t or not t.profileName or not t.editModeName then return end
@@ -269,6 +276,7 @@ function FC:LayoutTemplateCommand(raw)
             .. " | Edit Mode: " .. tostring(t.editModeName) .. ".")
         say("Dit character: " .. this .. " | Bartender geladen: " .. tostring(bt ~= nil)
             .. " | Edit Mode layout aanwezig: " .. tostring(findAccountLayout(t.editModeName) ~= nil) .. ".")
+        if FC.ExtraUIProfilesStatus then FC:ExtraUIProfilesStatus() end
         if t.screenWidth and t.screenHeight then
             local w, h = nil, nil
             if type(GetPhysicalScreenSize) == "function" then w, h = GetPhysicalScreenSize() end
