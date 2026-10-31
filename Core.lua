@@ -1,4 +1,4 @@
--- ForeverCore 0.3.21-beta (WoW: Forever Beta / Camelot)
+-- ForeverCore 0.3.22-beta (WoW: Forever Beta / Camelot)
 -- Display and convenience only. Does not automate spells or bypass protected APIs.
 
 local FC = CreateFrame("Frame")
@@ -139,6 +139,7 @@ local function handle(line)
         say("/fc plates auto/on/off | /fc mode tank/fury/arms | /fc alerts on/off | /fc taunt on/off")
         say("/fc chat status | /fc chat setup   (Party + Whispers tabs)")
         say("/fc bartender status | /fc bartender apply | /fc layout capture/status/apply")
+        say("/fc party status | /fc party apply (raid-style party frames + class colors)")
         say("/fc record [status|summary|on|off|native on|native off] | /fc mark <notitie>")
     elseif arg == "record" or arg == "combatlog" or arg == "mark" then
         if FC.RecorderCommand then FC:RecorderCommand(line) else say("Recorder-module ontbreekt.") end
@@ -166,6 +167,12 @@ local function handle(line)
             FC:LayoutTemplateCommand(val)
         else
             say("LayoutTemplate.lua is niet geladen.")
+        end
+    elseif arg == "party" then
+        if FC.PartyFramesCommand then
+            FC:PartyFramesCommand(val)
+        else
+            say("PartyFrames.lua is niet geladen.")
         end
     elseif arg == "bartender" then
         if FC.BartenderCommand then
