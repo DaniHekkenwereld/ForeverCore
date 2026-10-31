@@ -16,6 +16,7 @@ local newThisLogin = {}
 local postLoginChecks = {}
 local desiredCVars = {
     {"autoLootDefault", "1"},
+    {"raidFramesDisplayClassColor", "1"}, -- raid + raid-style party class colors
     {"alwaysShowActionBars", "1"}, -- keep empty Blizzard action buttons visible
     {"nameplateShowEnemies", "1"},
     {"nameplateShowAll", "1"},
