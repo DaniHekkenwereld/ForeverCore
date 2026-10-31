@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.19-beta
+## Included in v0.3.20-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -44,6 +44,14 @@ Use the same monitor resolution and WoW UI scale for pixel-identical placement. 
 Use `/fc layout capture` again on **Dien Warr** after installing this update. Both addons need to be enabled and loaded. Use `/fc layout status` to confirm that **all four** UI components are recorded (Bartender4, Edit Mode, Questie and Details!). If one addon is missing, the command says so; its configuration is not fabricated from screenshots.
 
 A **new** character automatically selects the saved Questie AceDB profile and calls Details!' native `ApplyProfile`, without changing quests or combat history. For an already-created character, `/fc layout apply` opts in. The copy uses the original screen resolution and UI scale. Questie or Details! initialization may require a `/reload` after the first apply.
+
+## Fixing newly created character keybinds & BetterBlizzFrames (v0.3.20)
+
+- Initial keybind setup now checks newly created characters again after the game and Bartender have loaded. It retries only twice and only for a character first seen during this login, avoiding automatic overwrites of existing character custom bindings.
+- Use `/fc setup status` to see the active keybinding set and whether the expected G / Scroll Down / Shift / Alt keys actually match.
+- If the new character was made with an earlier addon version, `/fc setup apply` can manually retry its normal keybind preset.
+- BetterBlizzFrames is a different addon with **account-wide SavedVariables** (`BetterBlizzFramesDB`), not a separate per-character UI profile to capture. It must be enabled and loaded on the character. `/fc layout status` now reports its real load state; when it is not loaded, check the WoW character-selection AddOns menu and choose **All Characters** for BetterBlizzFrames. `/bbf` opens its options when enabled.
+- No changes to existing spell/action slots or Bartender's captured profile.
 
 ## Installation
 
