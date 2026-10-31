@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.22-beta — 2026-10-31
+
+- Enable Blizzard **Use Raid-Style Party Frames** automatically via the actual Edit Mode party frame setting, not by forcing protected frame visibility. Save the active custom Edit Mode layout without changing positions or other settings.
+- Set `raidFramesDisplayClassColor=1` outside combat, for class-colored raid and raid-style party healthbars. Legacy `useCompactPartyFrames` CVar is attempted only when the modern Edit Mode API is unavailable.
+- Add `/fc party status` and `/fc party apply` to inspect or retry. Defer while in combat or the Edit Mode interface is being edited. No modifications to the user's captured Bartender layout, binds, or action slot contents.
+- Actual WoW Forever client validation still required.
+
+
 ## 0.3.21-beta — 2026-10-31
 
 - Fix cross-account import: do not block Bartender4's saved snapshot on a missing Blizzard Edit Mode account layout. Apply each independently and track completion per character.
