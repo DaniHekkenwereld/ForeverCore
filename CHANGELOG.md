@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.21-beta — 2026-10-31
+
+- Fix cross-account import: do not block Bartender4's saved snapshot on a missing Blizzard Edit Mode account layout. Apply each independently and track completion per character.
+- Improve /fc layout status by showing the actual Bartender profile and whether Bartender and Edit Mode parts were separately applied.
+- Report actionable warnings when account-wide Bartender SavedVariables or account Edit Mode layouts are unavailable.
+- Importing Blizzard Edit Mode between Battle.net accounts still requires an explicit in-game Share/Import step. Resolution and UI scale must also match. Character abilities and binds remain untouched.
+
+
 ## 0.3.20-beta — 2026-10-31
 
 - Re-check **only newly created characters** 2 and 6 seconds after world entry. A successful first keybinding write can be overwritten by the game's later loading phases; perform a limited repair when the requested main/Shift/Alt bindings are missing.
