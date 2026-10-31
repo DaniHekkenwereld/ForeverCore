@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.21-beta
+## Included in v0.3.22-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -62,6 +62,16 @@ Transferring `Interface` and `WTF` can preserve addon settings, but **does not g
 - In v0.3.21 the addon applies Bartender4 independently of Edit Mode. A missing Edit Mode account layout no longer prevents Bartender4's saved bar geometry from loading.
 - On the recipient, use `/fc layout status` for the active Bartender profile, snapshot status, and whether the Edit Mode layout exists. Use `/fc layout apply` to opt into the template on an existing character.
 - For the same pixel placement, set the same game resolution AND UI scale as the source computer.
+
+## Raid-style party frames (v0.3.22)
+
+ForeverCore enables **Use Raid-Style Party Frames** through Blizzard's native Edit Mode party-frame setting and sets `raidFramesDisplayClassColor=1` so class colors appear in raid frames and raid-style party frames. It leaves existing Party frame positions, scale, group sorting, other Edit Mode settings, spell slots, and addon profiles unchanged.
+
+- Applies automatically after login or Edit Mode layout changes and retries once the manager is available. No combat writes.
+- Modifies the active **custom** Edit Mode layout only and calls Blizzard's `SaveLayouts` method. Does not silently replace or mutate built-in presets. When the modern Edit Mode API is unavailable, it tries the old `useCompactPartyFrames` CVar only if supported.
+- `/fc party status` displays whether the native party setting and class colors are active.
+- `/fc party apply` retries and reports failures.
+- If the game blocks programmatic Edit Mode writes, enable **Use Raid-Style Party Frames** manually under Edit Mode > Party Frames. Class colors are under Options > Interface > Raid Frames.
 
 ## Installation
 
