@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.24-beta
+## Included in v0.3.25-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -71,6 +71,12 @@ This replaces the v0.3.23 read-only approach. The previous v0.3.22 live Edit Mod
 
 The change is applied automatically at login, no command required. /fc party status checks the saved value. Because the previous implementation produced a secret-value taint error on Forever+, in-game verification is still required.
 
+
+## Delayed Bartender4 profile application (v0.3.25)
+
+A fresh character previously could miss its Bartender4 snapshot if Bartender was still loading during the initial login and no later event triggered `LayoutTemplate.lua` again. ForeverCore now retries the saved layout at 1, 3, and 7 seconds after login (outside combat), and on `ADDON_LOADED: Bartender4`, until its own per-character completion state is stored. It verifies AceDB's current profile after calling SetProfile.
+
+This does **not** copy actions, macros, spells, or keybindings, and does **not** force the saved snapshot over existing characters. Manual `/fc layout apply` remains available to opt into the UI on an already-created character. Use `/fc layout status` to inspect the actual selected Bartender4 profile. If Bartender4 is disabled for a character, no profile can be applied; enable it in the AddOns list.
 
 ## Installation
 
