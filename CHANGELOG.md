@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.24-beta — 2026-10-31
+
+- Set the captured Blizzard Edit Mode layout's **Use Raid-Style Party Frames** checkbox to 1 automatically and persist it using C_EditMode.GetLayouts / C_EditMode.SaveLayouts.
+- Update only the saved Boolean for Party Frames; do not touch protected unitframes or call taint-prone EditModeManagerFrame setting methods.
+- Retain class colors via raidFramesDisplayClassColor=1, and keep all existing layout positions and settings.
+- Existing characters and future characters that inherit the captured layout pick up the saved setting. WoW Forever+ in-game test still needed.
+
+
 ## 0.3.23-beta — 2026-10-31
 
 - Fix WoW Forever secure compact party frame taint: stop calling EditModeManagerFrame:OnSystemSettingChange and SaveLayouts from ForeverCore. These addon-driven calls contaminated the health-color update path and caused oldR secret-number comparisons to error in CompactUnitFrame_UpdateHealthColor.
