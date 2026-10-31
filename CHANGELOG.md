@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.20-beta — 2026-10-31
+
+- Re-check **only newly created characters** 2 and 6 seconds after world entry. A successful first keybinding write can be overwritten by the game's later loading phases; perform a limited repair when the requested main/Shift/Alt bindings are missing.
+- Detect and report the current binding set and keybind verification in `/fc setup status`; existing characters keep their customized bindings unless the user explicitly runs `/fc setup apply`.
+- BetterBlizzFrames uses account-wide SavedVariables. Add a live loaded/not loaded check to `/fc layout status`; do not overwrite its global settings or infer its UI appearance from screenshots.
+- Keybind changes do not delete or copy class spell slots, spells, quest data, or Bartender layouts. In-client verification still required.
+
+
 ## 0.3.19-beta — 2026-10-26
 
 - Extend `/fc layout capture` on Dien Warr to save the active Questie AceDB profile (including tracker position, dimensions and options) and Details!' live window layout (including position, sizes and skins) alongside Bartender4 and Blizzard Edit Mode.
