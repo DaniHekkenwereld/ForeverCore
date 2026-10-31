@@ -8,6 +8,8 @@ local driver = CreateFrame("Frame")
 local busy = false
 local queued = false
 local warned = {}
+local retryScheduled = false
+local retryTimers = {1, 3, 7}
 local profileName = "FC Dien Warr Snapshot"
 local accountLayoutName = "FC Dien Layout"
 
@@ -248,6 +250,14 @@ local function apply(force)
         busy = true
         local ok, result = pcall(bt.db.SetProfile, bt.db, t.profileName)
         busy = false
+        if ok then
+            -- A profile is only considered applied after checking AceDB.
+            local checked, current = pcall(bt.db.GetCurrentProfile, bt.db)
+            if not checked or current ~= t.profileName then
+                ok = false
+                result = "huidig profiel is " .. tostring(current)
+            end
+        end
         if not ok then
             if not warned[id .. ":bartender"] then
                 warned[id .. ":bartender"] = true
@@ -333,14 +343,33 @@ function FC:LayoutTemplateCommand(raw)
     end
 end
 
+local function retryAfterLogin()
+    if retryScheduled then return end
+    if not (C_Timer and type(C_Timer.After) == "function") then return end
+    retryScheduled = true
+    for i, delay in ipairs(retryTimers) do
+        C_Timer.After(delay, function()
+            -- Do not reconfigure the source or existing characters. apply()
+            -- has the existing-character and completion guards.
+            apply(false)
+            if i == #retryTimers then retryScheduled = false end
+        end)
+    end
+end
+
+driver:RegisterEvent("ADDON_LOADED")
 driver:RegisterEvent("PLAYER_LOGIN")
 driver:RegisterEvent("PLAYER_ENTERING_WORLD")
 driver:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
 driver:RegisterEvent("PLAYER_REGEN_ENABLED")
-driver:SetScript("OnEvent", function(_, event)
+driver:SetScript("OnEvent", function(_, event, addon)
+    if event == "ADDON_LOADED" and addon ~= "Bartender4" then return end
     if event == "PLAYER_REGEN_ENABLED" then
         if not queued then return end
         queued = false
     end
     apply(false)
+    if event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_LOGIN" then
+        retryAfterLogin()
+    end
 end)
