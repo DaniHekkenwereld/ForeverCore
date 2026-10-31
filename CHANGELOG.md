@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.25-beta — 2026-10-31
+
+- Retry the captured Bartender4/Edit Mode layout at 1, 3, and 7 seconds after login and after Bartender4 loads. Fixes fresh characters that missed the one-shot initialization when Bartender was not yet ready.
+- Verify the selected AceDB profile actually matches the saved `FC Dien Warr Snapshot` before recording successful per-character application.
+- Do not alter action slot contents, class spells, keybinds, or manually configured existing-character layouts.
+
+
 ## 0.3.24-beta — 2026-10-31
 
 - Set the captured Blizzard Edit Mode layout's **Use Raid-Style Party Frames** checkbox to 1 automatically and persist it using C_EditMode.GetLayouts / C_EditMode.SaveLayouts.
