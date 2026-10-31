@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.23-beta — 2026-10-31
+
+- Fix WoW Forever secure compact party frame taint: stop calling EditModeManagerFrame:OnSystemSettingChange and SaveLayouts from ForeverCore. These addon-driven calls contaminated the health-color update path and caused oldR secret-number comparisons to error in CompactUnitFrame_UpdateHealthColor.
+- Party raid-style remains automatic for future characters through the captured, saved Blizzard Edit Mode account layout. Enable it once using Blizzard Edit Mode UI on Dien Warr, save, and recapture; ForeverCore selects that exact layout on new characters.
+- Continue enabling raid class colors via the existing raidFramesDisplayClassColor CVar in AccountSetup.lua. Remove duplicate late CVar writes and the unsafe legacy party toggle fallback.
+- /fc party status is now read-only; /fc party apply no longer writes secure unit frame options. Check the current native Edit Mode setting and CVar state.
+- Requires in-game validation after full client restart. If the error persists after changing to this build and reloading, enable taint logging to find any remaining taint sources.
+
+
 ## 0.3.22-beta — 2026-10-31
 
 - Enable Blizzard **Use Raid-Style Party Frames** automatically via the actual Edit Mode party frame setting, not by forcing protected frame visibility. Save the active custom Edit Mode layout without changing positions or other settings.
