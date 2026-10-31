@@ -220,40 +220,66 @@ end
 
 local function apply(force)
     if busy or combat() then queued = true; return end
-    -- Manual apply must include optional addon UI profiles even when
-    -- Bartender or Edit Mode have not finished initializing yet.
+    -- A missing Blizzard Edit Mode layout must not block Bartender4.
+    -- Edit Mode account layouts often do not travel with a copied WTF folder
+    -- because they are associated with another game account.
     if force and FC.ApplyExtraUIProfiles then FC:ApplyExtraUIProfiles(true) end
     local id = guid()
     local t = db()
     if not id or not t or not t.profileName or not t.editModeName then return end
     if not force and (id == t.source or (t.existing and t.existing[id])) then return end
     if not force and t.applied and t.applied[id] == t.revision then return end
-    local bt = bartender()
-    if not bt or not isSavedProfile(bt, t.profileName) then return end
-    if not findAccountLayout(t.editModeName) then return end
 
-    busy = true
-    local ok, reason = pcall(bt.db.SetProfile, bt.db, t.profileName)
-    if not ok then
+    t.appliedParts = t.appliedParts or {}
+    t.appliedParts[id] = t.appliedParts[id] or {}
+    local state = t.appliedParts[id]
+    local bt = bartender()
+
+    if not state.bartender or force then
+        if not bt then return end -- Retry after Bartender's preset loads.
+        if not isSavedProfile(bt, t.profileName) then
+            if not warned[id .. ":bartender"] then
+                warned[id .. ":bartender"] = true
+                say("Bartender-profiel '" .. t.profileName
+                    .. "' ontbreekt. Kopieer Bartender4.lua uit de accountbrede SavedVariables-map.")
+            end
+            return
+        end
+        busy = true
+        local ok, result = pcall(bt.db.SetProfile, bt.db, t.profileName)
         busy = false
-        if not warned[id] then
-            warned[id] = true
-            say("Bartender-profiel laden mislukt: " .. tostring(reason))
+        if not ok then
+            if not warned[id .. ":bartender"] then
+                warned[id .. ":bartender"] = true
+                say("Bartender-profiel laden mislukt: " .. tostring(result))
+            end
+            return
         end
-        return
+        state.bartender = true
+        say("Bartender-profiel '" .. t.profileName .. "' toegepast.")
     end
-    local editOK = selectEditLayout(t.editModeName)
-    busy = false
-    if not editOK then
-        if not warned[id] then
-            warned[id] = true
-            say("Bartender geladen, maar Edit Mode-layout kon niet geactiveerd worden. /fc layout apply om opnieuw te proberen.")
+
+    if not state.editMode or force then
+        if findAccountLayout(t.editModeName) then
+            if selectEditLayout(t.editModeName) then
+                state.editMode = true
+                say("Edit Mode-layout '" .. t.editModeName .. "' geselecteerd.")
+            end
+        else
+            if not warned[id .. ":editMode"] then
+                warned[id .. ":editMode"] = true
+                say("Edit Mode-layout '" .. t.editModeName
+                    .. "' ontbreekt op dit account. Exporteer het vanuit Edit Mode op de bronaccount"
+                    .. " en importeer het hier met precies dezelfde naam.")
+            end
         end
-        return
     end
-    t.applied = t.applied or {}
-    t.applied[id] = t.revision
-    say("Layout van " .. (t.sourceName or "broncharacter") .. " toegepast: Bartender + Blizzard Edit Mode.")
+
+    if state.bartender and state.editMode then
+        t.applied = t.applied or {}
+        t.applied[id] = t.revision
+        say("Bartender + Blizzard Edit Mode-layout volledig toegepast.")
+    end
 end
 
 function FC:LayoutTemplateCommand(raw)
@@ -270,7 +296,16 @@ function FC:LayoutTemplateCommand(raw)
             say("Nog geen layout vastgelegd. Log op Dien Warr in en gebruik /fc layout capture.")
             return
         end
-        local this = (t.applied and id and t.applied[id] == t.revision) and "toegepast" or "niet toegepast"
+        local this = (t.applied and id and t.applied[id] == t.revision) and "toegepast" or "niet volledig toegepast"
+        local state = id and t.appliedParts and t.appliedParts[id]
+        local currentProfile = "onbekend"
+        if bt and type(bt.db.GetCurrentProfile) == "function" then
+            local success, name = pcall(bt.db.GetCurrentProfile, bt.db)
+            if success then currentProfile = tostring(name) end
+        end
+        say("Bartender huidig profiel: " .. currentProfile
+            .. ", snapshot toegepast: " .. ((state and state.bartender) and "ja" or "nee")
+            .. " | Edit Mode toegepast: " .. ((state and state.editMode) and "ja" or "nee") .. ".")
         say("Bron: " .. tostring(t.sourceName) .. ", rev " .. tostring(t.revision)
             .. " | Bartender: " .. tostring(t.profileName)
             .. " | Edit Mode: " .. tostring(t.editModeName) .. ".")
