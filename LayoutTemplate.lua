@@ -277,6 +277,16 @@ function FC:LayoutTemplateCommand(raw)
         say("Dit character: " .. this .. " | Bartender geladen: " .. tostring(bt ~= nil)
             .. " | Edit Mode layout aanwezig: " .. tostring(findAccountLayout(t.editModeName) ~= nil) .. ".")
         if FC.ExtraUIProfilesStatus then FC:ExtraUIProfilesStatus() end
+        local bbfLoaded = false
+        if C_AddOns and type(C_AddOns.IsAddOnLoaded) == "function" then
+            local ok, loaded = pcall(C_AddOns.IsAddOnLoaded, "BetterBlizzFrames")
+            bbfLoaded = ok and loaded or false
+        elseif type(IsAddOnLoaded) == "function" then
+            local ok, loaded = pcall(IsAddOnLoaded, "BetterBlizzFrames")
+            bbfLoaded = ok and loaded or false
+        end
+        say("BetterBlizzFrames: " .. (bbfLoaded and "geladen" or "NIET geladen")
+            .. " (instellingen zijn accountbreed; geen aparte capture).")
         if t.screenWidth and t.screenHeight then
             local w, h = nil, nil
             if type(GetPhysicalScreenSize) == "function" then w, h = GetPhysicalScreenSize() end
