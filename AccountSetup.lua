@@ -10,6 +10,10 @@ local prefix = "|cff80c9ffForeverCore|r "
 local running = false
 local pending = false
 local warned = {}
+-- Only characters first seen during THIS login may receive a delayed retry.
+-- Existing characters' custom bindings must never be automatically replaced.
+local newThisLogin = {}
+local postLoginChecks = {}
 local desiredCVars = {
     {"autoLootDefault", "1"},
     {"alwaysShowActionBars", "1"}, -- keep empty Blizzard action buttons visible
@@ -318,6 +322,27 @@ local function writeBindings(desired, clearExisting, saveMode, previousPreset, n
     if not ok or saved == false then return false, "SaveBindings failed" end
     return true
 end
+local function expectedStarterBindings()
+    if type(GetBindingAction) ~= "function" then return false end
+    local checks = {
+        {"1", "ACTIONBUTTON1"},
+        {"2", "ACTIONBUTTON2"},
+        {"3", "ACTIONBUTTON3"},
+        {"4", "ACTIONBUTTON4"},
+        {"G", "ACTIONBUTTON5"},
+        {"MOUSEWHEELDOWN", "ACTIONBUTTON6"},
+        {"SHIFT-1", "MULTIACTIONBAR1BUTTON1"},
+        {"ALT-1", "MULTIACTIONBAR2BUTTON1"},
+        {"ALT-SHIFT-1", "MULTIACTIONBAR3BUTTON1"},
+        {"X", "SITORSTAND"},
+    }
+    for _, pair in ipairs(checks) do
+        local ok, actual = pcall(GetBindingAction, pair[1])
+        if not ok or actual ~= pair[2] then return false end
+    end
+    return true
+end
+
 local function applyBindings(force)
     local s = settings()
     if not s or (not s.autoBindings and not force) then return end
@@ -474,6 +499,11 @@ local function status()
     local p = s.profile
     say("Setup: CVars " .. (s.autoCVars and "aan" or "uit") .. ", keybind-sync " .. (s.autoBindings and "aan" or "uit")
         .. ", friendly " .. db.plateMode .. ", profiel " .. (p and (#p.keys .. " toetsen, rev " .. p.revision) or "ergonomische 4-layer layout (geen hoofdchar nodig)") .. ".")
+    local id = playerID()
+    local currentRev = p and p.revision or starterRevision
+    say("Bindings status: " .. ((id and s.applied[id] == currentRev) and "opgeslagen" or "niet toegepast")
+        .. "; current binding set: " .. (type(GetCurrentBindingSet) == "function" and tostring(GetCurrentBindingSet()) or "onbekend")
+        .. "; verwachte 1-4, G, ScrollDown, Shift/Alt: " .. (p and "aangepast profiel" or (expectedStarterBindings() and "correct" or "NIET correct")) .. ".")
     say("Blizzard actionbar toggles worden niet door ForeverCore gewijzigd; Bartender4 heeft eigen bar-instellingen.")
     if FC.BartenderCommand then FC:BartenderCommand("status") end
     say("Auto loot=" .. tostring(getCVar("autoLootDefault"))
@@ -526,20 +556,77 @@ function FC:SetupCommand(raw)
         say("/fc setup layout | capture | apply | restore | status | bindings on/off | settings on/off | bars on/off")
     end
 end
+-- A new character's first keybind writes can be overwritten when Blizzard
+-- or Bartender finishes loading. Apply after world entry and verify again.
+-- Never re-import on old characters or silently override later user edits.
+local function checkNewCharacterBindings(id, attempt)
+    if not newThisLogin[id] then return end
+    if postLoginChecks[id] and postLoginChecks[id] >= 2 then return end
+    if locked() then pending = true; return end
+    local s = settings()
+    if not s or not s.autoBindings then return end
+    local profile = s.profile
+    if type(profile) == "table" and type(profile.keys) == "table" and #profile.keys >= 5 then
+        -- Custom captured bindings have no universal G/Shift signature.
+        if s.applied[id] == profile.revision then newThisLogin[id] = nil end
+        return
+    end
+    if expectedStarterBindings() then
+        newThisLogin[id] = nil
+        return
+    end
+    postLoginChecks[id] = (postLoginChecks[id] or 0) + 1
+    -- Ensure an initial attempt which reported success but was subsequently
+    -- overwritten can be retried for THIS newly-created character only.
+    if s.applied[id] == starterRevision then s.applied[id] = nil end
+    applyBindings(false)
+    if expectedStarterBindings() then
+        newThisLogin[id] = nil
+        say("Keybinds geverifieerd na initialisatie: 1-4, G, Scroll Down en modifiers.")
+    elseif attempt == 2 then
+        newThisLogin[id] = nil
+        say("Keybinds wijken nog af. Gebruik /fc setup status en zo nodig /fc setup apply.")
+    end
+end
+
+local function scheduleNewCharacterCheck(id)
+    if not id or not newThisLogin[id] then return end
+    if C_Timer and type(C_Timer.After) == "function" then
+        C_Timer.After(2, function() checkNewCharacterBindings(id, 1) end)
+        C_Timer.After(6, function() checkNewCharacterBindings(id, 2) end)
+    else
+        checkNewCharacterBindings(id, 2)
+    end
+end
+
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 f:RegisterEvent("PLAYER_REGEN_ENABLED")
 f:SetScript("OnEvent", function(_, event)
     if not settings() then return end
-    if event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
+    if event == "PLAYER_LOGIN" then
+        -- Determine newness BEFORE assigning s.applied[guid].
+        local s = settings()
+        local id = playerID()
+        if id and s and not s.applied[id] then newThisLogin[id] = true end
         applyCVars()
+        -- First attempt at login; second chance after other addons load.
         applyBindings(false)
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        applyCVars()
+        if newThisLogin[playerID()] then
+            scheduleNewCharacterCheck(playerID())
+        else
+            applyBindings(false)
+        end
     elseif event == "ZONE_CHANGED_NEW_AREA" then
         applyCVars()
     elseif event == "PLAYER_REGEN_ENABLED" and pending then
         pending = false
         applyCVars()
         applyBindings(false)
+        local id = playerID()
+        if id and newThisLogin[id] then scheduleNewCharacterCheck(id) end
     end
 end)
