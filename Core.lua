@@ -1,4 +1,4 @@
--- ForeverCore 0.3.23-beta (WoW: Forever Beta / Camelot)
+-- ForeverCore 0.3.24-beta (WoW: Forever Beta / Camelot)
 -- Display and convenience only. Does not automate spells or bypass protected APIs.
 
 local FC = CreateFrame("Frame")
