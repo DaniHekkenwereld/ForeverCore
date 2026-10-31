@@ -50,7 +50,7 @@ local function getPartyEditSystem()
     end
 
     local manager = _G.EditModeManagerFrame
-    if type(manager) ~= "table" or type(manager.GetRegisteredSystemFrame) ~= "function"
+    if not manager or type(manager.GetRegisteredSystemFrame) ~= "function"
         or type(manager.GetActiveLayoutInfo) ~= "function" then
         return nil, nil, nil, "Edit Mode nog niet geladen"
     end
@@ -58,7 +58,7 @@ local function getPartyEditSystem()
     local partyIndex = Enum.EditModeUnitFrameSystemIndices.Party
     local setting = Enum.EditModeUnitFrameSetting.UseRaidStylePartyFrames
     local ok, partyFrame = pcall(manager.GetRegisteredSystemFrame, manager, system, partyIndex)
-    if not ok or type(partyFrame) ~= "table" or type(partyFrame.HasSetting) ~= "function"
+    if not ok or not partyFrame or type(partyFrame.HasSetting) ~= "function"
         or type(partyFrame.GetSettingValueBool) ~= "function" then
         return nil, nil, nil, "Party Edit Mode frame niet gereed"
     end
