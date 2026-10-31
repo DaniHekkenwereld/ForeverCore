@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.23-beta
+## Included in v0.3.24-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -63,16 +63,13 @@ Transferring `Interface` and `WTF` can preserve addon settings, but **does not g
 - On the recipient, use `/fc layout status` for the active Bartender profile, snapshot status, and whether the Edit Mode layout exists. Use `/fc layout apply` to opt into the template on an existing character.
 - For the same pixel placement, set the same game resolution AND UI scale as the source computer.
 
-## Raid-style party frames (v0.3.23, taint-safe)
+## Raid-style party frames (v0.3.24)
 
-ForeverCore applies the exact **saved Blizzard Edit Mode layout** on newly created characters. To ensure **Use Raid-Style Party Frames** is always on, enable the option **once on Dien Warr** in Blizzard Edit Mode > Party Frames, click **Save**, then run `/fc layout capture` again. Every future character inheriting that Edit Mode layout will use Blizzard's native raid-style party frames.
+The checkbox **Use Raid-Style Party Frames** is now set to 1 automatically in the captured Blizzard Edit Mode layout (such as Dien). ForeverCore reads the native saved layout, changes only that one Boolean, and saves it through C_EditMode.SaveLayouts outside combat. Bar positions, Edit Mode coordinates, other unit frame settings and keybindings stay untouched.
 
-**Class colors** remain enabled by the existing `raidFramesDisplayClassColor=1` setting in `AccountSetup.lua`. No addon writes to compact party health bars or their color calculations.
+This replaces the v0.3.23 read-only approach. The previous v0.3.22 live Edit Mode manager calls are still removed to avoid the reported secure-frame taint. Class colors remain handled by AccountSetup.lua with raidFramesDisplayClassColor=1.
 
-The v0.3.22 code incorrectly called `EditModeManagerFrame:OnSystemSettingChange` and `SaveLayouts` from an addon; this tainted Blizzard's secure compact unit frame color updates in WoW Forever, causing secret number comparisons during play. v0.3.23 **removes that unsafe live Edit Mode mutation** and its legacy fallback. `/fc party status` reports the raid-style setting and class-color CVar without modifying frames. `/fc party apply` is informational and tells users to apply the saved layout, but does not modify secure settings.
-
-For first-time setup, configure the native raid-style option on the source character via Blizzard's UI. The automatically inherited account layout then provides the desired result without runtime tampering.
-
+The change is applied automatically at login, no command required. /fc party status checks the saved value. Because the previous implementation produced a secret-value taint error on Forever+, in-game verification is still required.
 
 
 ## Installation
