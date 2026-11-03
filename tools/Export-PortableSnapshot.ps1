@@ -142,8 +142,9 @@ if ($parentProfile -eq '{}' -and $namespaceProfiles.Count -eq 0) {
     $parentProfile = $profiles[$sourceProfile]
     $namespaceProfiles = [ordered] @{}
     if ($bartenderChildren.Contains('namespaces')) {
-        foreach ($ns in (Get-DirectTables $bartenderChildren['namespaces']).Keys) {
-            $parts = Get-DirectTables (Get-DirectTables $bartenderChildren['namespaces'])[$ns]
+        $allNamespaces = Get-DirectTables $bartenderChildren['namespaces']
+        foreach ($ns in $allNamespaces.Keys) {
+            $parts = Get-DirectTables $allNamespaces[$ns]
             if (-not $parts.Contains('profiles')) { continue }
             $nProfiles = Get-DirectTables $parts['profiles']
             if ($nProfiles.Contains($sourceProfile)) { $namespaceProfiles[$ns] = $nProfiles[$sourceProfile] }
