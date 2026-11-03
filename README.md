@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.25-beta
+## Included in v0.3.27-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -41,7 +41,7 @@ Use the same monitor resolution and WoW UI scale for pixel-identical placement. 
 - **Questie:** the complete AceDB **profile**, including `TrackerLocation`, tracker dimensions, scale, appearance and options, stored as `FC Dien Warr Questie`. Questie `db.char` (tracked quests and quest progress) is never copied.
 - **Details!:** its native `SaveProfile("FC Dien Warr Details")` saves the CURRENT live Details! window positions, sizes, skin and appearance. The snapshot enables `profile_save_pos` so its window positions are restored on new characters. Details combat records, character history and combat segments are not copied.
 
-Use `/fc layout capture` again on **Dien Warr** after installing this update. Both addons need to be enabled and loaded. Use `/fc layout status` to confirm that **all four** UI components are recorded (Bartender4, Edit Mode, Questie and Details!). If one addon is missing, the command says so; its configuration is not fabricated from screenshots.
+Use `/fc layout capture` again on the configured source character (for example, **Tester**) after installing this update. You may leave the existing Questie and Details! snapshot profiles selected; capturing them again no longer requires switching profiles. Both addons need to be enabled and loaded. Use `/fc layout status` to confirm that **all four** UI components are recorded (Bartender4, Edit Mode, Questie and Details!). If one addon is missing, the command says so; its configuration is not fabricated from screenshots.
 
 A **new** character automatically selects the saved Questie AceDB profile and calls Details!' native `ApplyProfile`, without changing quests or combat history. For an already-created character, `/fc layout apply` opts in. The copy uses the original screen resolution and UI scale. Questie or Details! initialization may require a `/reload` after the first apply.
 
