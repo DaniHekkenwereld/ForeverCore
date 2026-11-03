@@ -79,14 +79,280 @@ foreach ($folder in (Get-ChildItem -LiteralPath $addonsPath -Directory | Sort-Ob
     $name = $folder.Name
     $tocs = @(Get-ChildItem -LiteralPath $folder.FullName -Filter '*.toc' -File -ErrorAction SilentlyContinue)
     $vars = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    $perCharacterVars = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     foreach ($toc in $tocs) {
         $tocText = Get-Content -LiteralPath $toc.FullName -Raw -ErrorAction SilentlyContinue
         foreach ($tocLine in ($tocText -split "\r?\n")) {
-            $m = [regex]::Match($tocLine, '^\s*##\s*SavedVariables\s*:\s*(.+)$', 'IgnoreCase')
-            if (-not $m.Success) { continue }
-            foreach ($var in ($m.Groups[1].Value -split ',')) {
-                $var = $var.Trim()
-                if ($var -match '^[a-zA-Z_][a-zA-Z_0-9]*$') { [void] $vars.Add($var) }
+            $m = [regex]::Match($tocLine, '^\s*##\s*SavedVariables\s*:\s*(.+)
+        }
+    }
+    if ($perCharacterVars.Count -gt 0) {
+        $report.Add("PER-CHARACTER $name : niet generiek gekopieerd ($($perCharacterVars -join ', '))")
+    }
+    # EnhanceQoL uses many separate companion modules; inspect their TOC too.
+    $moduleIsUI = $name.StartsWith('EnhanceQoL', [System.StringComparison]::OrdinalIgnoreCase)
+    if (-not $allowed.ContainsKey($name.ToLowerInvariant()) -and -not $moduleIsUI) {
+        if ($excluded.ContainsKey($name)) {
+            $report.Add("SKIP $name : $($excluded[$name])")
+        } elseif ($vars.Count -gt 0) {
+            $report.Add("NEEDS ADAPTER $name : $($vars -join ', ')")
+        } else {
+            $report.Add("NO CONFIG $name : geen eigen account-SavedVariables in TOC")
+        }
+        continue
+    }
+    if ($vars.Count -eq 0) {
+        $report.Add("NO CONFIG $name : geen account-SavedVariables gevonden")
+        continue
+    }
+    $file = Join-Path $savedPath "$name.lua"
+    if (-not (Test-Path -LiteralPath $file)) {
+        $report.Add("NO SAVE $name : nog geen SavedVariables-bestand")
+        continue
+    }
+    $raw = Get-Content -LiteralPath $file -Raw
+    $entries = [System.Collections.Generic.List[string]]::new()
+    foreach ($var in $vars) {
+        # Even allowlisted UI addons can declare raw session or history tables.
+        if ($var -match '(?i)Cache|History|Combat|Character|Quest|Inventory|Session|DataStore|Record|Log') {
+            $report.Add("SKIP DATA $name/$var")
+            continue
+        }
+        $pattern = '(?m)^\s*' + [regex]::Escape($var) + '\s*=\s*'
+        $hit = [regex]::Match($raw, $pattern)
+        if (-not $hit.Success) { continue }
+        $literal = Read-LuaLiteral $raw ($hit.Index + $hit.Length)
+        if (-not $literal) {
+            $report.Add("SKIP PARSE $name/$var")
+            continue
+        }
+        if ($literal.Length -gt 8000000) {
+            $report.Add("SKIP SIZE $name/$var (groter dan 8 MB)")
+            continue
+        }
+        $entries.Add('      ["' + $var + '"] = ' + $literal + ',')
+        $count++
+    }
+    if ($entries.Count -eq 0) {
+        $report.Add("NO EXPORT $name")
+        continue
+    }
+    $lines.Add('    ["' + $name + '"] = {')
+    foreach ($entry in $entries) { $lines.Add($entry) }
+    $lines.Add('    },')
+    $report.Add("OK $name : $($entries.Count) configuratievariabele(n)")
+}
+$lines.Add('  },')
+$lines.Add('}')
+$destination = Join-Path $AddonRoot 'PortableAddonSettings.lua'
+[System.IO.File]::WriteAllLines($destination, $lines, [System.Text.UTF8Encoding]::new($false))
+$reportFile = Join-Path $AddonRoot 'PortableAddonSettings-report.txt'
+[System.IO.File]::WriteAllLines($reportFile, $report, [System.Text.UTF8Encoding]::new($false))
+Write-Host "Extra addoninstellingen: $count configuratievariabelen" -ForegroundColor Green
+Write-Host "Snapshot: $destination"
+Write-Host "Per-addon controlelijst: $reportFile"
+, 'IgnoreCase')
+            $pc = [regex]::Match($tocLine, '^\s*##\s*SavedVariablesPerCharacter\s*:\s*(.+)
+        }
+    }
+    if (-not $allowed.ContainsKey($name.ToLowerInvariant())) {
+        if ($excluded.ContainsKey($name)) {
+            $report.Add("SKIP $name : $($excluded[$name])")
+        } elseif ($vars.Count -gt 0) {
+            $report.Add("NEEDS ADAPTER $name : $($vars -join ', ')")
+        } else {
+            $report.Add("NO CONFIG $name : geen eigen account-SavedVariables in TOC")
+        }
+        continue
+    }
+    if ($vars.Count -eq 0) {
+        $report.Add("NO CONFIG $name : geen account-SavedVariables gevonden")
+        continue
+    }
+    $file = Join-Path $savedPath "$name.lua"
+    if (-not (Test-Path -LiteralPath $file)) {
+        $report.Add("NO SAVE $name : nog geen SavedVariables-bestand")
+        continue
+    }
+    $raw = Get-Content -LiteralPath $file -Raw
+    $entries = [System.Collections.Generic.List[string]]::new()
+    foreach ($var in $vars) {
+        # Even allowlisted UI addons can declare raw session or history tables.
+        if ($var -match '(?i)Cache|History|Combat|Character|Quest|Inventory|Session|DataStore|Record|Log') {
+            $report.Add("SKIP DATA $name/$var")
+            continue
+        }
+        $pattern = '(?m)^\s*' + [regex]::Escape($var) + '\s*=\s*'
+        $hit = [regex]::Match($raw, $pattern)
+        if (-not $hit.Success) { continue }
+        $literal = Read-LuaLiteral $raw ($hit.Index + $hit.Length)
+        if (-not $literal) {
+            $report.Add("SKIP PARSE $name/$var")
+            continue
+        }
+        if ($literal.Length -gt 1000000) {
+            $report.Add("SKIP SIZE $name/$var (groter dan 1 MB)")
+            continue
+        }
+        $entries.Add('      ["' + $var + '"] = ' + $literal + ',')
+        $count++
+    }
+    if ($entries.Count -eq 0) {
+        $report.Add("NO EXPORT $name")
+        continue
+    }
+    $lines.Add('    ["' + $name + '"] = {')
+    foreach ($entry in $entries) { $lines.Add($entry) }
+    $lines.Add('    },')
+    $report.Add("OK $name : $($entries.Count) configuratievariabele(n)")
+}
+$lines.Add('  },')
+$lines.Add('}')
+$destination = Join-Path $AddonRoot 'PortableAddonSettings.lua'
+[System.IO.File]::WriteAllLines($destination, $lines, [System.Text.UTF8Encoding]::new($false))
+$reportFile = Join-Path $AddonRoot 'PortableAddonSettings-report.txt'
+[System.IO.File]::WriteAllLines($reportFile, $report, [System.Text.UTF8Encoding]::new($false))
+Write-Host "Extra addoninstellingen: $count configuratievariabelen" -ForegroundColor Green
+Write-Host "Snapshot: $destination"
+Write-Host "Per-addon controlelijst: $reportFile"
+, 'IgnoreCase')
+            if ($m.Success) {
+                foreach ($var in ($m.Groups[1].Value -split ',')) {
+                    $var = $var.Trim()
+                    if ($var -match '^[a-zA-Z_][a-zA-Z_0-9]*
+        }
+    }
+    if (-not $allowed.ContainsKey($name.ToLowerInvariant())) {
+        if ($excluded.ContainsKey($name)) {
+            $report.Add("SKIP $name : $($excluded[$name])")
+        } elseif ($vars.Count -gt 0) {
+            $report.Add("NEEDS ADAPTER $name : $($vars -join ', ')")
+        } else {
+            $report.Add("NO CONFIG $name : geen eigen account-SavedVariables in TOC")
+        }
+        continue
+    }
+    if ($vars.Count -eq 0) {
+        $report.Add("NO CONFIG $name : geen account-SavedVariables gevonden")
+        continue
+    }
+    $file = Join-Path $savedPath "$name.lua"
+    if (-not (Test-Path -LiteralPath $file)) {
+        $report.Add("NO SAVE $name : nog geen SavedVariables-bestand")
+        continue
+    }
+    $raw = Get-Content -LiteralPath $file -Raw
+    $entries = [System.Collections.Generic.List[string]]::new()
+    foreach ($var in $vars) {
+        # Even allowlisted UI addons can declare raw session or history tables.
+        if ($var -match '(?i)Cache|History|Combat|Character|Quest|Inventory|Session|DataStore|Record|Log') {
+            $report.Add("SKIP DATA $name/$var")
+            continue
+        }
+        $pattern = '(?m)^\s*' + [regex]::Escape($var) + '\s*=\s*'
+        $hit = [regex]::Match($raw, $pattern)
+        if (-not $hit.Success) { continue }
+        $literal = Read-LuaLiteral $raw ($hit.Index + $hit.Length)
+        if (-not $literal) {
+            $report.Add("SKIP PARSE $name/$var")
+            continue
+        }
+        if ($literal.Length -gt 1000000) {
+            $report.Add("SKIP SIZE $name/$var (groter dan 1 MB)")
+            continue
+        }
+        $entries.Add('      ["' + $var + '"] = ' + $literal + ',')
+        $count++
+    }
+    if ($entries.Count -eq 0) {
+        $report.Add("NO EXPORT $name")
+        continue
+    }
+    $lines.Add('    ["' + $name + '"] = {')
+    foreach ($entry in $entries) { $lines.Add($entry) }
+    $lines.Add('    },')
+    $report.Add("OK $name : $($entries.Count) configuratievariabele(n)")
+}
+$lines.Add('  },')
+$lines.Add('}')
+$destination = Join-Path $AddonRoot 'PortableAddonSettings.lua'
+[System.IO.File]::WriteAllLines($destination, $lines, [System.Text.UTF8Encoding]::new($false))
+$reportFile = Join-Path $AddonRoot 'PortableAddonSettings-report.txt'
+[System.IO.File]::WriteAllLines($reportFile, $report, [System.Text.UTF8Encoding]::new($false))
+Write-Host "Extra addoninstellingen: $count configuratievariabelen" -ForegroundColor Green
+Write-Host "Snapshot: $destination"
+Write-Host "Per-addon controlelijst: $reportFile"
+) { [void] $vars.Add($var) }
+                }
+            }
+            if ($pc.Success) {
+                foreach ($var in ($pc.Groups[1].Value -split ',')) {
+                    $var = $var.Trim()
+                    if ($var -match '^[a-zA-Z_][a-zA-Z_0-9]*
+        }
+    }
+    if (-not $allowed.ContainsKey($name.ToLowerInvariant())) {
+        if ($excluded.ContainsKey($name)) {
+            $report.Add("SKIP $name : $($excluded[$name])")
+        } elseif ($vars.Count -gt 0) {
+            $report.Add("NEEDS ADAPTER $name : $($vars -join ', ')")
+        } else {
+            $report.Add("NO CONFIG $name : geen eigen account-SavedVariables in TOC")
+        }
+        continue
+    }
+    if ($vars.Count -eq 0) {
+        $report.Add("NO CONFIG $name : geen account-SavedVariables gevonden")
+        continue
+    }
+    $file = Join-Path $savedPath "$name.lua"
+    if (-not (Test-Path -LiteralPath $file)) {
+        $report.Add("NO SAVE $name : nog geen SavedVariables-bestand")
+        continue
+    }
+    $raw = Get-Content -LiteralPath $file -Raw
+    $entries = [System.Collections.Generic.List[string]]::new()
+    foreach ($var in $vars) {
+        # Even allowlisted UI addons can declare raw session or history tables.
+        if ($var -match '(?i)Cache|History|Combat|Character|Quest|Inventory|Session|DataStore|Record|Log') {
+            $report.Add("SKIP DATA $name/$var")
+            continue
+        }
+        $pattern = '(?m)^\s*' + [regex]::Escape($var) + '\s*=\s*'
+        $hit = [regex]::Match($raw, $pattern)
+        if (-not $hit.Success) { continue }
+        $literal = Read-LuaLiteral $raw ($hit.Index + $hit.Length)
+        if (-not $literal) {
+            $report.Add("SKIP PARSE $name/$var")
+            continue
+        }
+        if ($literal.Length -gt 1000000) {
+            $report.Add("SKIP SIZE $name/$var (groter dan 1 MB)")
+            continue
+        }
+        $entries.Add('      ["' + $var + '"] = ' + $literal + ',')
+        $count++
+    }
+    if ($entries.Count -eq 0) {
+        $report.Add("NO EXPORT $name")
+        continue
+    }
+    $lines.Add('    ["' + $name + '"] = {')
+    foreach ($entry in $entries) { $lines.Add($entry) }
+    $lines.Add('    },')
+    $report.Add("OK $name : $($entries.Count) configuratievariabele(n)")
+}
+$lines.Add('  },')
+$lines.Add('}')
+$destination = Join-Path $AddonRoot 'PortableAddonSettings.lua'
+[System.IO.File]::WriteAllLines($destination, $lines, [System.Text.UTF8Encoding]::new($false))
+$reportFile = Join-Path $AddonRoot 'PortableAddonSettings-report.txt'
+[System.IO.File]::WriteAllLines($reportFile, $report, [System.Text.UTF8Encoding]::new($false))
+Write-Host "Extra addoninstellingen: $count configuratievariabelen" -ForegroundColor Green
+Write-Host "Snapshot: $destination"
+Write-Host "Per-addon controlelijst: $reportFile"
+) { [void] $perCharacterVars.Add($var) }
+                }
             }
         }
     }
