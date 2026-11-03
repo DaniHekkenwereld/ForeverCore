@@ -52,6 +52,7 @@ function FC:EnsurePortableDefaults()
         t.editModeName = t.editModeName or "FC Dien Layout"
         t.revision = tonumber(t.revision) or 1
         t.existing, t.applied, t.appliedParts, t.addonsApplied = {}, {}, {}, {}
+        t.portableEditModeAttempted = nil
         -- Include only optional profiles really bundled in the AddOn.
         local addons = {}
         if type(data.questie) == "table" then
