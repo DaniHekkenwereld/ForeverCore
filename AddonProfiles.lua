@@ -74,7 +74,10 @@ local function saveQuestieProfile()
         return false, "Questie-profiel onbekend"
     end
     if source == questieName then
-        return false, "Dien Warr gebruikt al de snapshot; selecteer eerst zijn eigen Questie-profiel"
+        -- The active snapshot already contains the current live Questie
+        -- profile; copying it onto itself would be unsafe and unnecessary.
+        if hasAceProfile(qdb, questieName) then return true end
+        return false, "Actief Questie-snapshotprofiel niet gevonden in AceDB"
     end
     -- AceDB CopyProfile copies only the profile table, not db.char quest
     -- tracking state. The source profile remains the active one afterwards.
@@ -97,9 +100,9 @@ local function saveDetailsProfile()
     if not ok or type(source) ~= "string" or source == "" then
         return false, "Details!-bronprofiel onbekend"
     end
-    if source == detailsName then
-        return false, "Dien Warr gebruikt al de snapshot; selecteer eerst zijn eigen Details!-profiel"
-    end
+    -- Saving the currently active snapshot is supported: Details! captures
+    -- live window positions via SaveProfile(saveas), even if that is also
+    -- the current profile's name. Do not ask users to switch profiles.
     -- The native SaveProfile(saveas) exports the CURRENT LIVE window
     -- instances, including GetPosition(), width, height, skin and active
     -- visibility to a global profile without changing the current profile.
@@ -132,8 +135,9 @@ function FC:CaptureExtraUIProfiles(template)
         template.addons.questie = {profile = questieName}
         say("Questie: trackerpositie en profielinstellingen vastgelegd.")
     else
-        template.addons.questie = nil
-        say("Questie niet vastgelegd: " .. tostring(qerr) .. ".")
+        -- Keep an older good snapshot when an optional addon is temporarily
+        -- unavailable; never silently remove it from the portable export.
+        say("Questie niet opnieuw vastgelegd: " .. tostring(qerr) .. ".")
     end
 
     local dok, derr = saveDetailsProfile()
@@ -141,8 +145,7 @@ function FC:CaptureExtraUIProfiles(template)
         template.addons.details = {profile = detailsName}
         say("Details!: live vensterposities, afmetingen en profielinstellingen vastgelegd.")
     else
-        template.addons.details = nil
-        say("Details! niet vastgelegd: " .. tostring(derr) .. ".")
+        say("Details! niet opnieuw vastgelegd: " .. tostring(derr) .. ".")
     end
     -- Any older per-character apply results are invalidated on recapture.
     template.addonsApplied = {}
