@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.27-beta
+## Included in v0.3.28-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -53,6 +53,19 @@ A **new** character automatically selects the saved Questie AceDB profile and ca
 - BetterBlizzFrames is a different addon with **account-wide SavedVariables** (`BetterBlizzFramesDB`), not a separate per-character UI profile to capture. It must be enabled and loaded on the character. `/fc layout status` now reports its real load state; when it is not loaded, check the WoW character-selection AddOns menu and choose **All Characters** for BetterBlizzFrames. `/bbf` opens its options when enabled.
 - No changes to existing spell/action slots or Bartender's captured profile.
 
+## Additional installed addon settings (v0.3.28, partial coverage)
+
+When the user runs `tools/Export-PortableSnapshot.ps1`, that script **also** scans the installed addon folders and their `.toc` manifests and runs `tools/Export-AddonSettings.ps1`. It creates two additional files inside ForeverCore:
+
+- `PortableAddonSettings.lua` — portable **account-level settings** for allowlisted UI addons. Install the generated file as part of ForeverCore; **never overwrite it with the empty GitHub placeholder**.
+- `PortableAddonSettings-report.txt` — itemized **OK / NO SAVE / NO CONFIG / SKIP / NEEDS ADAPTER** statuses for every installed addon directory. Review this report before sharing the snapshot.
+
+Default allowlist: Bagnon, Bagnon_Bank, Bagnon_Config, Bagnon_GuildBank, BetterBlizzFrames, EnhanceQoL, GTFO, Leatrix_Maps, Plater, Scrap and TinyTooltip, when their account-level variables exist. Bartender4, Questie, Details! and ForeverCore continue to use the dedicated portable snapshot. Other folders shown in the screenshot are modules, locale packs, plugins, or addons requiring specific adapters. **This is not yet an export of every setting of every addon.** No per-character SavedVariables are exported by the generic scanner.
+
+Some other addons combine UI preferences with progress or personal data. The exporter **deliberately excludes** BagBrother inventory data, Polestar guide progress, Spoken playback state, RXP guide progress, HandyNotes personal notes, ForeverBugReporter reports, and similar data until safe settings-only adapters exist. A generic raw copy would leak personal or character-specific data to other players. Never share a raw WTF folder as a substitute.
+
+On a new account, ForeverCore imports these packaged settings into the supported addons' native SavedVariables **once**, then attempts one `/reload` so those addons initialize with the restored preferences. It will not repeatedly overwrite later user changes. Use `/fc addons status` to inspect the account import count. Third-party addon initialization and native `/reload` support still need testing on the Forever client.
+
 ## Same UI on every WoW account on this computer (v0.3.26)
 
 **Goal: no dragging, copying WTF folders or manually selecting Bartender profiles when creating a new character, even on a different WoW account.** Native WoW account SavedVariables cannot be read by addons belonging to another account. ForeverCore therefore loads a *portable snapshot* from its own `Interface/AddOns/ForeverCore/PortableSnapshot.lua`.
@@ -67,7 +80,7 @@ Prepare the snapshot **once** on the already configured source account:
    powershell -ExecutionPolicy Bypass -File .\tools\Export-PortableSnapshot.ps1
    ```
 
-The exporter finds the configured source account and embeds only the named Bartender AceDB parent/namespace profile, the captured Blizzard Edit Mode data, optional captured keybind profile, and available Questie tracker / Details! UI profiles. It does **not** copy character action slots, spells, quests, gameplay recordings or Details! combat history. An explicit WoW client folder may be supplied with `-GameRoot "C:\...\_classic_beta_"`, and `-Account "ACCOUNT_FOLDER"` selects a particular source account.
+The exporter also creates PortableAddonSettings.lua and a coverage report for extra addons. It finds the configured source account and embeds only the named Bartender AceDB parent/namespace profile, the captured Blizzard Edit Mode data, optional captured keybind profile, and available Questie tracker / Details! UI profiles. It does **not** copy character action slots, spells, quests, gameplay recordings or Details! combat history. An explicit WoW client folder may be supplied with `-GameRoot "C:\...\_classic_beta_"`, and `-Account "ACCOUNT_FOLDER"` selects a particular source account.
 
 **After generation**, on any new WoW account using **that same client installation**, ForeverCore seeds the named Bartender profile from its own addon file, applies the captured UI on new characters, and attempts to install/select the native account Edit Mode layout. Questie and Details! are also seeded when their named profiles were present in the export. A missing Blizzard layout does not block Bartender. Existing characters keep their own UI until `/fc layout apply` is explicitly used.
 
@@ -104,6 +117,8 @@ This does **not** copy actions, macros, spells, or keybindings, and does **not**
      Recorder.lua
      PortableSnapshot.lua
      PortableDefaults.lua
+     PortableAddonSettings.lua
+     PortableAddonSetup.lua
      AccountSetup.lua
      ChatSetup.lua
    ```
