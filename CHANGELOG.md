@@ -1,3 +1,10 @@
+## 0.3.27-beta — Snapshot recapture from an active saved profile
+
+- Fix `/fc layout capture` falsely rejecting Details! when the current character already uses `FC Dien Warr Details`. It now refreshes the snapshot from the live Details! window arrangement.
+- Accept an already-active `FC Dien Warr Questie` profile as valid instead of asking the user to change profiles.
+- Preserve an earlier optional addon snapshot when a later capture temporarily fails; no unrelated UI resets.
+- The capture source character can be named anything (e.g. Tester); the profile names are portable identifiers.
+
 ## 0.3.26-beta — Portable UI defaults across WoW accounts
 
 - Bundle the exact captured Bartender parent and namespace profiles into an addon-side `PortableSnapshot.lua`, so new characters on different WoW accounts can receive the same UI without copying WTF files.
