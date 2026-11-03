@@ -140,6 +140,7 @@ local function handle(line)
         say("/fc chat status | /fc chat setup   (Party + Whispers tabs)")
         say("/fc bartender status | /fc bartender apply | /fc layout capture/status/apply")
         say("/fc party status (raid-style + class colors; via opgeslagen Edit Mode layout)")
+        say("/fc addons status (controleer overige portable addoninstellingen)")
         say("/fc record [status|summary|on|off|native on|native off] | /fc mark <notitie>")
     elseif arg == "record" or arg == "combatlog" or arg == "mark" then
         if FC.RecorderCommand then FC:RecorderCommand(line) else say("Recorder-module ontbreekt.") end
@@ -168,6 +169,9 @@ local function handle(line)
         else
             say("LayoutTemplate.lua is niet geladen.")
         end
+    elseif arg == "addons" then
+        if FC.PortableAddonsStatus then FC:PortableAddonsStatus()
+        else say("PortableAddonSetup.lua is niet geladen.") end
     elseif arg == "party" then
         if FC.PartyFramesCommand then
             FC:PartyFramesCommand(val)
