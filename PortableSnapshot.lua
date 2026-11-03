@@ -1,0 +1,3 @@
+-- This file is a placeholder until a snapshot is generated on the configured WoW PC.
+-- Run tools/Export-PortableSnapshot.ps1 after /fc layout capture and logout.
+-- The generated file contains portable UI defaults; it is read for every WoW account.
