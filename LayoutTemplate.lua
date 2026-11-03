@@ -197,6 +197,9 @@ local function capture()
     t.sourceName = UnitName and UnitName("player") or "broncharacter"
     t.profileName = profileName
     t.editModeName = layoutName
+    -- Preserve the native Blizzard layout data for new accounts using this AddOn
+    -- package. The portable export script embeds this in PortableSnapshot.lua.
+    t.layoutData = CopyTable(layout)
     t.screenWidth = GetPhysicalScreenSize and select(1, GetPhysicalScreenSize()) or nil
     t.screenHeight = GetPhysicalScreenSize and select(2, GetPhysicalScreenSize()) or nil
     t.existing[id] = true
@@ -226,6 +229,9 @@ local function apply(force)
     -- Edit Mode account layouts often do not travel with a copied WTF folder
     -- because they are associated with another game account.
     if force and FC.ApplyExtraUIProfiles then FC:ApplyExtraUIProfiles(true) end
+    -- The packaged snapshot is the default even when this WoW account has
+    -- never seen the source private-server character.
+    if FC.EnsurePortableDefaults then FC:EnsurePortableDefaults() end
     local id = guid()
     local t = db()
     if not id or not t or not t.profileName or not t.editModeName then return end
@@ -243,7 +249,7 @@ local function apply(force)
             if not warned[id .. ":bartender"] then
                 warned[id .. ":bartender"] = true
                 say("Bartender-profiel '" .. t.profileName
-                    .. "' ontbreekt. Kopieer Bartender4.lua uit de accountbrede SavedVariables-map.")
+                    .. "' ontbreekt. Genereer PortableSnapshot.lua vanuit de bronconfiguratie.")
             end
             return
         end
@@ -270,6 +276,10 @@ local function apply(force)
     end
 
     if not state.editMode or force then
+        if not findAccountLayout(t.editModeName) and FC.EnsurePortableEditLayout then
+            if force then t.portableEditModeAttempted = nil end
+            FC:EnsurePortableEditLayout(t.editModeName)
+        end
         if findAccountLayout(t.editModeName) then
             if selectEditLayout(t.editModeName) then
                 state.editMode = true
@@ -279,8 +289,7 @@ local function apply(force)
             if not warned[id .. ":editMode"] then
                 warned[id .. ":editMode"] = true
                 say("Edit Mode-layout '" .. t.editModeName
-                    .. "' ontbreekt op dit account. Exporteer het vanuit Edit Mode op de bronaccount"
-                    .. " en importeer het hier met precies dezelfde naam.")
+                    .. "' ontbreekt op dit account. Controleer de ingepakte layout en /fc layout apply.")
             end
         end
     end
@@ -299,6 +308,7 @@ function FC:LayoutTemplateCommand(raw)
     elseif command == "apply" then
         apply(true)
     elseif command == "status" then
+        if FC.EnsurePortableDefaults then FC:EnsurePortableDefaults() end
         local t = db()
         local bt = bartender()
         local id = guid()
@@ -316,6 +326,8 @@ function FC:LayoutTemplateCommand(raw)
         say("Bartender huidig profiel: " .. currentProfile
             .. ", snapshot toegepast: " .. ((state and state.bartender) and "ja" or "nee")
             .. " | Edit Mode toegepast: " .. ((state and state.editMode) and "ja" or "nee") .. ".")
+        say("Portable instellingen in addon: "
+            .. ((FC.HasPortableDefaults and FC:HasPortableDefaults()) and "aan" or "NIET AANWEZIG") .. ".")
         say("Bron: " .. tostring(t.sourceName) .. ", rev " .. tostring(t.revision)
             .. " | Bartender: " .. tostring(t.profileName)
             .. " | Edit Mode: " .. tostring(t.editModeName) .. ".")
