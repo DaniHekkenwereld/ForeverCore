@@ -52,6 +52,15 @@ function FC:EnsurePortableDefaults()
         t.editModeName = t.editModeName or "FC Dien Layout"
         t.revision = tonumber(t.revision) or 1
         t.existing, t.applied, t.appliedParts, t.addonsApplied = {}, {}, {}, {}
+        -- Existing characters previously configured by ForeverCore should
+        -- retain their chosen UI rather than be treated as fresh characters.
+        if type(root.accountSetup) == "table"
+            and type(root.accountSetup.applied) == "table" then
+            for id in pairs(root.accountSetup.applied) do t.existing[id] = true end
+        end
+        if type(root.bartenderDefaults) == "table" then
+            for id in pairs(root.bartenderDefaults) do t.existing[id] = true end
+        end
         t.portableEditModeAttempted = nil
         -- Include only optional profiles really bundled in the AddOn.
         local addons = {}
