@@ -156,6 +156,7 @@ local function canApply(template, id, force)
 end
 
 local function applyQuestie(profile)
+    if FC.EnsurePortableAddonProfile then FC:EnsurePortableAddonProfile("questie") end
     local qdb = questie()
     if not qdb or not hasAceProfile(qdb, profile) then return false, "Questie-profiel ontbreekt" end
     local ok, current = pcall(qdb.GetCurrentProfile, qdb)
@@ -167,6 +168,7 @@ local function applyQuestie(profile)
 end
 
 local function applyDetails(profile)
+    if FC.EnsurePortableAddonProfile then FC:EnsurePortableAddonProfile("details") end
     local d = details()
     if not d then return false, "Details! nog niet gereed" end
     local ok, snapshot = pcall(d.GetProfile, d, profile, false)
