@@ -1,3 +1,10 @@
+## 0.3.28-beta — More portable addon settings
+
+- Add a .toc-based installed-addon scanner to the existing one-command export on the source PC. It bundles account-level settings for allowlisted UI addons: Bagnon, BetterBlizzFrames, EnhanceQoL, GTFO, Leatrix Maps, Plater, Scrap and TinyTooltip, plus available addon modules.
+- Add `PortableAddonSettings.lua` and `PortableAddonSetup.lua`: settings are imported only once on a new WoW account, then a reload is attempted so addons reinitialize with those preferences. Existing changes are not repeatedly overwritten.
+- Create `PortableAddonSettings-report.txt` listing covered, missing and unsupported addon folders. Exclude sensitive caches and character history rather than copying every SavedVariables table blindly.
+- Add `/fc addons status`. Universal addon settings portability remains *partial*: unrecognized add-ons and per-character preferences need their own adapters after reviewing the local report. In-game validation required.
+
 ## 0.3.27-beta — Snapshot recapture from an active saved profile
 
 - Fix `/fc layout capture` falsely rejecting Details! when the current character already uses `FC Dien Warr Details`. It now refreshes the snapshot from the live Details! window arrangement.
