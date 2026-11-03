@@ -53,15 +53,27 @@ A **new** character automatically selects the saved Questie AceDB profile and ca
 - BetterBlizzFrames is a different addon with **account-wide SavedVariables** (`BetterBlizzFramesDB`), not a separate per-character UI profile to capture. It must be enabled and loaded on the character. `/fc layout status` now reports its real load state; when it is not loaded, check the WoW character-selection AddOns menu and choose **All Characters** for BetterBlizzFrames. `/bbf` opens its options when enabled.
 - No changes to existing spell/action slots or Bartender's captured profile.
 
-## Copying your ForeverCore layout to another WoW account (v0.3.21)
+## Same UI on every WoW account on this computer (v0.3.26)
 
-Transferring `Interface` and `WTF` can preserve addon settings, but **does not guarantee** that Blizzard Edit Mode account layouts, Battle.net account IDs, or character-specific settings are transferred.
+**Goal: no dragging, copying WTF folders or manually selecting Bartender profiles when creating a new character, even on a different WoW account.** Native WoW account SavedVariables cannot be read by addons belonging to another account. ForeverCore therefore loads a *portable snapshot* from its own `Interface/AddOns/ForeverCore/PortableSnapshot.lua`.
 
-- Copy addon account-wide files such as `Bartender4.lua` and `ForeverCore.lua` (plus optional Details!, Questie, BetterBlizzFrames) into **the recipient's active** `WTF/Account/<their-id>/SavedVariables/` directory while WoW is closed. Do not simply leave them under the sender's account-ID directory. Back up the recipient's current WTF first. The global Bartender profile must be named `FC Dien Warr Snapshot`.
-- Export the **Dien** Blizzard Edit Mode layout on the source account via Edit Mode > Share, send the exported text, then on the recipient account use Edit Mode > Import and save it as **Dien**.
-- In v0.3.21 the addon applies Bartender4 independently of Edit Mode. A missing Edit Mode account layout no longer prevents Bartender4's saved bar geometry from loading.
-- On the recipient, use `/fc layout status` for the active Bartender profile, snapshot status, and whether the Edit Mode layout exists. Use `/fc layout apply` to opt into the template on an existing character.
-- For the same pixel placement, set the same game resolution AND UI scale as the source computer.
+Prepare the snapshot **once** on the already configured source account:
+
+1. Update ForeverCore on the game installation where **Dien Warr** and the finished UI are configured.
+2. Log into Dien Warr, check Bartender and Blizzard Edit Mode, use `/fc layout capture`, then **log out** to save the captured information.
+3. With the game closed, open PowerShell **in the installed ForeverCore addon folder** and execute:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\tools\Export-PortableSnapshot.ps1
+   ```
+
+The exporter finds the configured source account and embeds only the named Bartender AceDB parent/namespace profile, the captured Blizzard Edit Mode data, optional captured keybind profile, and available Questie tracker / Details! UI profiles. It does **not** copy character action slots, spells, quests, gameplay recordings or Details! combat history. An explicit WoW client folder may be supplied with `-GameRoot "C:\...\_classic_beta_"`, and `-Account "ACCOUNT_FOLDER"` selects a particular source account.
+
+**After generation**, on any new WoW account using **that same client installation**, ForeverCore seeds the named Bartender profile from its own addon file, applies the captured UI on new characters, and attempts to install/select the native account Edit Mode layout. Questie and Details! are also seeded when their named profiles were present in the export. A missing Blizzard layout does not block Bartender. Existing characters keep their own UI until `/fc layout apply` is explicitly used.
+
+On the new character, run `/fc layout status`; it must show **Portable instellingen in addon: aan** and the named Bartender snapshot. The actual client implementation still needs testing, especially the Blizzard Edit Mode save API on Forever+ and the release client. If that save API is denied, the addon reports a warning rather than claiming the Edit Mode import succeeded.
+
+**Important for updates:** `PortableSnapshot.lua` is generated locally. Do not overwrite it with the empty repository placeholder when updating ForeverCore. Include the generated file when installing ForeverCore on another computer; it is part of the addon, not an account-specific WTF file. Re-run the exporter only after deliberately changing the source UI.
 
 ## Raid-style party frames (v0.3.24)
 
@@ -90,6 +102,8 @@ This does **not** copy actions, macros, spells, or keybindings, and does **not**
      RaidWarnings.lua
      Openers.lua
      Recorder.lua
+     PortableSnapshot.lua
+     PortableDefaults.lua
      AccountSetup.lua
      ChatSetup.lua
    ```
