@@ -1,5 +1,6 @@
 # Generate self-contained defaults that load on EVERY WoW account.
-# Run after /fc layout capture and logout. No WTF copy per account.
+# Offline export from last saved WTF data. The original game server does not
+# need to be available. Last saved state may predate the newest capture.
 param([string] $GameRoot, [string] $Account)
 $ErrorActionPreference = 'Stop'
 $addonRoot = Split-Path -Parent $PSScriptRoot
@@ -78,24 +79,37 @@ if ($Account) {
             break
         }
     }
-    if (-not $source) { throw 'Geen bronaccount met Bartender4 + ForeverCore-snapshot gevonden.' }
+    if (-not $source) {
+        # Older accounts may not yet contain a completed ForeverCore snapshot.
+        # An offline export of their installed addon preferences is still useful.
+        $source = Get-ChildItem $accountRoot -Directory | Where-Object {
+            Test-Path (Join-Path $_.FullName 'SavedVariables\Bartender4.lua')
+        } | Sort-Object { (Get-Item (Join-Path $_.FullName 'SavedVariables\Bartender4.lua')).LastWriteTime } -Descending | Select-Object -First 1
+        if ($source) {
+            Write-Warning "Geen vastgelegde ForeverCore-snapshot gevonden. Probeer de laatst opgeslagen Bartender-instellingen uit account $($source.Name)."
+        }
+    }
+    if (-not $source) { throw 'Geen WoW-account met opgeslagen Bartender-instellingen gevonden. Gebruik desnoods tools/Export-AddonSettings.ps1 alleen.' }
 }
 
 $saved = Join-Path $source.FullName 'SavedVariables'
-$coreText = Get-Content (Join-Path $saved 'ForeverCore.lua') -Raw
+$coreFile = Join-Path $saved 'ForeverCore.lua'
+$coreText = if (Test-Path $coreFile) { Get-Content $coreFile -Raw } else { 'ForeverCoreDB = {}' }
 $bartenderText = Get-Content (Join-Path $saved 'Bartender4.lua') -Raw
 $core = Get-RootTable $coreText 'ForeverCoreDB'
 $bartender = Get-RootTable $bartenderText 'Bartender4DB'
 $coreChildren = Get-DirectTables $core
 $bartenderChildren = Get-DirectTables $bartender
 
-if (-not $coreChildren.Contains('layoutTemplate')) {
-    throw 'ForeverCore layout ontbreekt. Gebruik /fc layout capture en log uit.'
-}
-$layout = $coreChildren['layoutTemplate']
-$layoutChildren = Get-DirectTables $layout
-if (-not $layoutChildren.Contains('layoutData')) {
-    throw 'Portable Edit Mode-data ontbreekt. Update ForeverCore, doe /fc layout capture opnieuw en log uit.'
+$layout = '{["profileName"]="FC Dien Warr Snapshot",["editModeName"]="FC Dien Layout",["sourceName"]="Offline export",["revision"]=1}'
+if ($coreChildren.Contains('layoutTemplate')) {
+    $layout = $coreChildren['layoutTemplate']
+    $layoutChildren = Get-DirectTables $layout
+    if (-not $layoutChildren.Contains('layoutData')) {
+        Write-Warning 'Edit Mode-layoutdata ontbreken in laatste SavedVariables. Bartender kan wel worden geëxporteerd; Edit Mode niet volledig.'
+    }
+} else {
+    Write-Warning 'Geen opgeslagen ForeverCore-layout gevonden. Probeer Bartender zonder Edit Mode-layout.'
 }
 
 $profileName = 'FC Dien Warr Snapshot'
@@ -117,7 +131,25 @@ if ($bartenderChildren.Contains('namespaces')) {
     }
 }
 if ($parentProfile -eq '{}' -and $namespaceProfiles.Count -eq 0) {
-    throw "Bartender-profiel '$profileName' ontbreekt. Gebruik /fc layout capture opnieuw."
+    # No dedicated snapshot? The most recently saved AceDB profile is an
+    # offline fallback. Never invent geometry or claim an exact capture.
+    $profiles = if ($bartenderChildren.Contains('profiles')) { Get-DirectTables $bartenderChildren['profiles'] } else { [ordered] @{} }
+    $choices = @($profiles.Keys | Where-Object { $_ -ne 'Default' })
+    $sourceProfile = if ($choices.Count -eq 1) { $choices[0] }
+                     elseif ($profiles.Contains('Default')) { 'Default' }
+                     else { $null }
+    if (-not $sourceProfile) { throw "Geen Bartender profiel 'FC Dien Warr Snapshot' en geen eenduidig fallback-profiel in de offline data." }
+    $parentProfile = $profiles[$sourceProfile]
+    $namespaceProfiles = [ordered] @{}
+    if ($bartenderChildren.Contains('namespaces')) {
+        foreach ($ns in (Get-DirectTables $bartenderChildren['namespaces']).Keys) {
+            $parts = Get-DirectTables (Get-DirectTables $bartenderChildren['namespaces'])[$ns]
+            if (-not $parts.Contains('profiles')) { continue }
+            $nProfiles = Get-DirectTables $parts['profiles']
+            if ($nProfiles.Contains($sourceProfile)) { $namespaceProfiles[$ns] = $nProfiles[$sourceProfile] }
+        }
+    }
+    Write-Warning "De exacte Bartender-snapshot ontbreekt. Fallback naar opgeslagen profiel '$sourceProfile'. Controleer de layout bij eerste login."
 }
 
 $bindings = 'nil'
