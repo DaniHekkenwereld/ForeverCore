@@ -1,3 +1,11 @@
+## 0.3.26-beta — Portable UI defaults across WoW accounts
+
+- Bundle the exact captured Bartender parent and namespace profiles into an addon-side `PortableSnapshot.lua`, so new characters on different WoW accounts can receive the same UI without copying WTF files.
+- Capture the native Blizzard Edit Mode layout data; attempt a guarded one-time account layout install on a new WoW account without blocking Bartender when unavailable.
+- Add one-time `tools/Export-PortableSnapshot.ps1` that extracts only captured UI profiles and optional keybinds, Questie tracker and Details! window profiles from the configured source account.
+- Bootstrap defaults early enough for the first character login; preserve existing-character UI, spells, macros, actions and quest/combat records.
+- In-game validation on the Forever+ beta and the official release is still required. Locally generated snapshots must be preserved across addon reinstalls.
+
 # Changelog
 
 ## 0.3.25-beta — 2026-10-31
