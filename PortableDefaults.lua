@@ -52,9 +52,15 @@ function FC:EnsurePortableDefaults()
         t.editModeName = t.editModeName or "FC Dien Layout"
         t.revision = tonumber(t.revision) or 1
         t.existing, t.applied, t.appliedParts, t.addonsApplied = {}, {}, {}, {}
-        -- Optional Details!/Questie profiles are not part of the Bartender
-        -- package; never claim they were installed on a different account.
-        t.addons = nil
+        -- Include only optional profiles really bundled in the AddOn.
+        local addons = {}
+        if type(data.questie) == "table" then
+            addons.questie = {profile = data.questie.profileName}
+        end
+        if type(data.details) == "table" then
+            addons.details = {profile = data.details.profileName}
+        end
+        t.addons = next(addons) and addons or nil
         root.layoutTemplate = t
     end
 
@@ -85,6 +91,32 @@ function FC:EnsurePortableDefaults()
         end
     end
     return true
+end
+
+-- Questie and Details! use different profile stores; seed only their captured
+-- named UI profiles. Quest progress, character data and combat history stay local.
+function FC:EnsurePortableAddonProfile(which)
+    local data = bundle()
+    if not data then return false end
+    if which == "questie" and type(data.questie) == "table" then
+        local q = _G.Questie
+        local sv = q and q.db and q.db.sv
+        local name = data.questie.profileName
+        if type(sv) ~= "table" or type(name) ~= "string" then return false end
+        sv.profiles = sv.profiles or {}
+        if not sv.profiles[name] then sv.profiles[name] = clone(data.questie.profile) end
+        return type(sv.profiles[name]) == "table"
+    elseif which == "details" and type(data.details) == "table" then
+        local d = _G.Details
+        local sv = _G._detalhes_global
+        local name = data.details.profileName
+        if type(d) ~= "table" or type(sv) ~= "table"
+            or type(name) ~= "string" then return false end
+        sv.__profiles = sv.__profiles or {}
+        if not sv.__profiles[name] then sv.__profiles[name] = clone(data.details.profile) end
+        return type(sv.__profiles[name]) == "table"
+    end
+    return false
 end
 
 -- Install the portable Edit Mode account layout once. Blizzard owns these
