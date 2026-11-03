@@ -1,3 +1,10 @@
+## 0.3.29-beta — Repair broken offline AddOn settings exporter
+
+- Replace the corrupted `Export-AddonSettings.ps1` with a complete Windows PowerShell 5.1-compatible file; the previous commit had duplicated and truncated regex source and failed to parse.
+- Keep `PortableSnapshot.lua` and its successfully exported Bartender profiles intact; only the extra addon settings export needs to be rerun.
+- The addon settings script reads existing saved data offline; no login to the private test server is necessary.
+- Tested for file integrity in GitHub; runtime verification on Windows is still pending.
+
 ## 0.3.28-beta — More portable addon settings
 
 - Add a .toc-based installed-addon scanner to the existing one-command export on the source PC. It bundles account-level settings for allowlisted UI addons: Bagnon, BetterBlizzFrames, EnhanceQoL, GTFO, Leatrix Maps, Plater, Scrap and TinyTooltip, plus available addon modules.
