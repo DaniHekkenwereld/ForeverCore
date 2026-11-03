@@ -182,3 +182,12 @@ Write-Host "Portable UI-snapshot gemaakt: $destination" -ForegroundColor Green
 Write-Host "Bronaccount: $($source.Name); Bartender modules: $($namespaceProfiles.Count)"
 Write-Host "Nieuwe characters op ELK account krijgen deze interface automatisch."
 Write-Host "Na latere layoutwijzigingen: /fc layout capture, uitloggen en script opnieuw draaien."
+
+# Discover other installed UI addons and bundle safe account-wide preferences.
+# This is a one-time export on the source PC; no WTF copy per target account.
+$extraExporter = Join-Path $PSScriptRoot 'Export-AddonSettings.ps1'
+if (-not (Test-Path -LiteralPath $extraExporter)) {
+    throw "Export-AddonSettings.ps1 ontbreekt. Update eerst ForeverCore volledig."
+}
+& $extraExporter -GameRoot $GameRoot -Account $source.Name -AddonRoot $addonRoot
+
