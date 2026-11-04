@@ -83,6 +83,21 @@ local function activeLayout()
     return nil
 end
 
+local function namedEditLayout(name)
+    local info = editLayouts()
+    if not info or type(name) ~= "string" or name == "" then return nil end
+    local accountType = Enum and Enum.EditModeLayoutType and Enum.EditModeLayoutType.Account or 1
+    local first
+    for _, item in ipairs(info.layouts) do
+        if type(item.layoutName) == "string"
+            and item.layoutName:lower() == name:lower() then
+            if item.layoutType == accountType then return item end
+            first = first or item
+        end
+    end
+    return first
+end
+
 local function findAccountLayout(name)
     local layouts = editLayouts()
     if not layouts then return nil end
@@ -98,10 +113,11 @@ local function findAccountLayout(name)
     return nil
 end
 
-local function copyLayoutToAccount(layout)
+local function copyLayoutToAccount(layout, requestedName)
     local account = Enum and Enum.EditModeLayoutType and Enum.EditModeLayoutType.Account or 1
     if layout.layoutType == account then return layout.layoutName end
-    if findAccountLayout(accountLayoutName) then return accountLayoutName end
+    local destination = requestedName or accountLayoutName
+    if findAccountLayout(destination) then return destination end
 
     -- A character-only HUD layout is not accessible to new characters.
     -- Use Blizzard's own layout creation flow to save an account copy.
@@ -118,11 +134,11 @@ local function copyLayoutToAccount(layout)
     else
         return nil, "Blizzard CopyTable niet beschikbaar."
     end
-    local ok = pcall(frame.MakeNewLayout, frame, copy, account, accountLayoutName, true)
-    if not ok or not findAccountLayout(accountLayoutName) then
+    local ok = pcall(frame.MakeNewLayout, frame, copy, account, destination, true)
+    if not ok or not findAccountLayout(destination) then
         return nil, "Blizzard weigerde de accountkopie van Edit Mode."
     end
-    return accountLayoutName
+    return destination
 end
 
 local function isSavedProfile(bt, name)
@@ -135,19 +151,26 @@ local function isSavedProfile(bt, name)
     return false
 end
 
-local function capture()
+local function capture(requestedName)
     if combat() then say("Sla het profiel buiten combat op."); return end
     local id = guid()
     local t, root = db()
     local bt = bartender()
-    local layout = activeLayout()
+    -- Explicit name wins: the beta's GetActiveLayoutInfo can return a
+    -- different layout from the user's saved custom layout.
+    local layout = requestedName and namedEditLayout(requestedName) or activeLayout()
     if not id or not t then say("Charactergegevens nog niet beschikbaar."); return end
     if not bt then say("Bartender4 is nog niet volledig geladen. Probeer na /reload."); return end
-    if not layout then say("Geen opgeslagen actief Edit Mode-layout. Sla layout 'Dien' eerst op in Edit Mode."); return end
+    if not layout then
+        say(requestedName and ("Edit Mode-layout '" .. requestedName
+            .. "' bestaat niet op dit character. Sla die eerst op via Edit Mode.")
+            or "Geen opgeslagen actief Edit Mode-layout; gebruik /fc layout capture OWN.")
+        return
+    end
 
     -- Freeze a character-only layout as an account layout so it can be
     -- selected on every future character, regardless of HUD ownership.
-    local layoutName, why = copyLayoutToAccount(layout)
+    local layoutName, why = copyLayoutToAccount(layout, requestedName and layout.layoutName or nil)
     if not layoutName then say(why); return end
 
     local source = bt.db:GetCurrentProfile()
@@ -302,9 +325,10 @@ local function apply(force)
 end
 
 function FC:LayoutTemplateCommand(raw)
-    local command = tostring(raw or ""):lower():match("^%s*(%S*)") or ""
+    local action, arg = tostring(raw or ""):match("^%s*(%S*)%s*(.-)%s*$")
+    local command = (action or ""):lower()
     if command == "capture" then
-        capture()
+        capture(arg ~= "" and arg or nil)
     elseif command == "apply" then
         apply(true)
     elseif command == "status" then
@@ -351,7 +375,7 @@ function FC:LayoutTemplateCommand(raw)
                 .. "; huidig " .. tostring(w) .. "x" .. tostring(h) .. ".")
         end
     else
-        say("/fc layout capture | status | apply")
+        say("/fc layout capture OWN | status | apply")
     end
 end
 
