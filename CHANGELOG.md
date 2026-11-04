@@ -1,3 +1,13 @@
+## 0.3.30-beta — Complete keybind, camera, status-text, player-highlight and swing timer transfer
+
+- Fixed a real Lua binding capture bug: `GetBinding()` returns were packed in a sparse table, which could silently drop keys. Capture key1 and key2 explicitly.
+- The offline `Export-PortableSnapshot.ps1` now reads the source character's `bindings-cache.wtf` (or account-wide cache) for all native keybinds, including camera actions; it reports the source file and count.
+- All generic keybindings are restored for other classes, including Bartender CLICK bindings, with a delayed post-login verification. Warrior-specific spells are not bound to a Rogue.
+- Captures client zoom settings from local WTF config when present; imports both visible status values/percentages and the self-highlight circle plus outline on new accounts. Unsupported/restricted CVars are reported.
+- The full addon-settings export is v3 and enables EnhanceQoL's main-hand and off-hand swing bars; previous export explicitly disabled both.
+- No beta/private server login required: export reads existing local WTF files. Generated `PortableSnapshot.lua` and `PortableAddonSettings.lua` must be regenerated and transferred again.
+- Client verification still required, in particular native camera/overlay CVar restrictions and actual EnhanceQoL swing bar rendering.
+
 ## 0.3.29-beta — Repair broken offline AddOn settings exporter
 
 - Replace the corrupted `Export-AddonSettings.ps1` with a complete Windows PowerShell 5.1-compatible file; the previous commit had duplicated and truncated regex source and failed to parse.
