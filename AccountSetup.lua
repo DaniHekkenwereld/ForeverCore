@@ -183,13 +183,15 @@ end
 local function setCVar(name, value)
     local before = getCVar(name)
     if before == nil then return nil end -- Unknown CVar on this beta build.
-    if tonumber(before) == tonumber(value) then return true end
+    if before == tostring(value) then return true end
+    if tonumber(before) and tonumber(value) and tonumber(before) == tonumber(value) then return true end
     local setter = (C_CVar and C_CVar.SetCVar) or SetCVar
     if type(setter) ~= "function" then return false end
     local ok = pcall(setter, name, value)
     if not ok then return false end
     local after = getCVar(name)
-    return after ~= nil and tonumber(after) == tonumber(value)
+    if after == tostring(value) then return true end
+    return after ~= nil and tonumber(after) ~= nil and tonumber(after) == tonumber(value)
 end
 -- Do not call SetActionBarToggles on fresh characters.
 -- The Forever client previously hid secure bars after these writes.
@@ -204,6 +206,22 @@ local function applyCVars()
         if result == false and not warned[pair[1]] then
             warned[pair[1]] = true
             say(pair[1] .. " niet toepasbaar; client/server kan deze instelling beperken.")
+        end
+    end
+    -- Apply source client preferences to newly created accounts only;
+    -- never change the source account's own CVar configuration.
+    local bundled = _G.ForeverCoreBundledDefaults
+    local portable = bundled and bundled.clientCVars
+    if type(db.layoutTemplate) == "table" and db.layoutTemplate.source == "bundled-source"
+        and type(portable) == "table" then
+        for name, value in pairs(portable) do
+            if type(name) == "string" and type(value) == "string" then
+                local result = setCVar(name, value)
+                if result == false and not warned[name] then
+                    warned[name] = true
+                    say(name .. " uit het bronaccount niet toepasbaar in deze client.")
+                end
+            end
         end
     end
     if db.plateMode == "on" then
@@ -225,12 +243,13 @@ local function collect()
     if not ok or type(count) ~= "number" or count < 1 or count > 4096 then return nil end
     local keys, seen = {}, {}
     for i = 1, count do
-        local good, values = pcall(function() return {GetBinding(i)} end)
-        if not good or type(values) ~= "table" then return nil end
-        local command = values[1]
+        -- GetBinding returns command, category, key1, key2. Do not
+        -- pack the returns in a Lua array: a nil category produces a hole,
+        -- making #values unreliable and silently losing all hotkeys.
+        local good, command, category, key1, key2 = pcall(GetBinding, i)
+        if not good then return nil end
         if type(command) == "string" and command ~= "" then
-            for j = 3, #values do
-                local key = values[j]
+            for _, key in ipairs({key1, key2}) do
                 if type(key) == "string" and key ~= "" and not seen[key] then
                     seen[key] = true
                     keys[#keys + 1] = {key, command}
@@ -449,7 +468,9 @@ local function applyBindings(force)
     if not s.backups[guid] then
         s.backups[guid] = {keys = current, mode = 2}
     end
-    local ok, reason = writeBindings(target, captured and sameClass, 2, starter and s.applied[guid] or nil, starter)
+    -- A portable capture replaces Blizzard's default bindings even for
+    -- another class. Class-specific spell/macro bindings are omitted above.
+    local ok, reason = writeBindings(target, captured, 2, starter and s.applied[guid] or nil, starter)
     running = false
     if ok then
         s.applied[guid] = revision
@@ -513,6 +534,9 @@ local function status()
         .. ", afstand=" .. tostring(getCVar("nameplateMaxDistance")) .. " (effectieve servercap kan lager zijn).")
     say("Actionbar countdown=" .. tostring(getCVar("countdownForCooldowns"))
         .. ", Cooldown Manager=" .. tostring(getCVar("cooldownViewerEnabled")) .. ".")
+    say("Status text=" .. tostring(getCVar("statusText")) .. " / " .. tostring(getCVar("statusTextDisplay"))
+        .. ", camera max=" .. tostring(getCVar("cameraDistanceMaxZoomFactor"))
+        .. ", highlight circle=" .. tostring(getCVar("findYourselfModeCircle")) .. ".")
     say("Player Outline=" .. tostring(getCVar("Outline"))
         .. ", Graphics Outline=" .. tostring(getCVar("graphicsOutlineMode"))
         .. ", Self Highlight=" .. tostring(getCVar("findYourselfAnywhere"))
@@ -560,6 +584,21 @@ end
 -- A new character's first keybind writes can be overwritten when Blizzard
 -- or Bartender finishes loading. Apply after world entry and verify again.
 -- Never re-import on old characters or silently override later user edits.
+local function capturedBindingsMatch(profile, currentClass)
+    if type(profile) ~= "table" or type(profile.keys) ~= "table"
+        or type(GetBindingAction) ~= "function" then return false end
+    local sameClass = profile.class == currentClass
+    for _, binding in ipairs(profile.keys) do
+        local key, action = binding[1], binding[2]
+        if type(key) == "string" and type(action) == "string"
+            and (sameClass or not classSpecific(action)) then
+            local ok, actual = pcall(GetBindingAction, key)
+            if not ok or actual ~= action then return false end
+        end
+    end
+    return true
+end
+
 local function checkNewCharacterBindings(id, attempt)
     if not newThisLogin[id] then return end
     if postLoginChecks[id] and postLoginChecks[id] >= 2 then return end
@@ -568,8 +607,22 @@ local function checkNewCharacterBindings(id, attempt)
     if not s or not s.autoBindings then return end
     local profile = s.profile
     if type(profile) == "table" and type(profile.keys) == "table" and #profile.keys >= 5 then
-        -- Custom captured bindings have no universal G/Shift signature.
-        if s.applied[id] == profile.revision then newThisLogin[id] = nil end
+        if capturedBindingsMatch(profile, classToken()) then
+            newThisLogin[id] = nil
+            return
+        end
+        postLoginChecks[id] = (postLoginChecks[id] or 0) + 1
+        -- Blizzard's keybinding loader or another addon can overwrite
+        -- bindings after the first successful application.
+        if s.applied[id] == profile.revision then s.applied[id] = nil end
+        applyBindings(false)
+        if capturedBindingsMatch(profile, classToken()) then
+            newThisLogin[id] = nil
+            say("Portable keybinds na laden geverifieerd, inclusief camera.")
+        elseif attempt == 2 then
+            newThisLogin[id] = nil
+            say("Niet alle portable keybinds zijn toegepast. Typ /fc setup apply.")
+        end
         return
     end
     if expectedStarterBindings() then
