@@ -249,11 +249,13 @@ local function collect()
         local good, command, category, key1, key2 = pcall(GetBinding, i)
         if not good then return nil end
         if type(command) == "string" and command ~= "" then
-            for _, key in ipairs({key1, key2}) do
-                if type(key) == "string" and key ~= "" and not seen[key] then
-                    seen[key] = true
-                    keys[#keys + 1] = {key, command}
-                end
+            if type(key1) == "string" and key1 ~= "" and not seen[key1] then
+                seen[key1] = true
+                keys[#keys + 1] = {key1, command}
+            end
+            if type(key2) == "string" and key2 ~= "" and not seen[key2] then
+                seen[key2] = true
+                keys[#keys + 1] = {key2, command}
             end
         end
     end
@@ -261,8 +263,10 @@ local function collect()
     return keys
 end
 local function classSpecific(command)
+    -- CLICK bindings (e.g. Bartender4 button clicks) belong to shared
+    -- actionbar keys, not to one class. Keep them for Rogues and Warriors.
     return command:match("^SPELL ") or command:match("^MACRO ")
-        or command:match("^ITEM ") or command:match("^CLICK ")
+        or command:match("^ITEM ")
 end
 local function setKey(key, command)
     if type(SetBinding) ~= "function" then return false end
