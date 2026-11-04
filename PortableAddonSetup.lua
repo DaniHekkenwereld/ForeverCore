@@ -73,6 +73,18 @@ local function apply()
                        and (type(value) == "table" or type(value) == "string"
                          or type(value) == "boolean" or type(value) == "number") then
                         local val = clone(value)
+                        -- Original beta settings have EnhanceQoL's swing bars
+                        -- explicitly disabled. The portable UI requires both
+                        -- melee swing timers on new characters (incl. Rogue).
+                        if addon == "EnhanceQoL" and name == "EnhanceQoLDB"
+                            and type(val) == "table" and type(val.profiles) == "table" then
+                            for _, p in pairs(val.profiles) do
+                                if type(p) == "table" then
+                                    p.swingBarMainHandEnabled = true
+                                    p.swingBarOffHandEnabled = true
+                                end
+                            end
+                        end
                         local old = _G[name]
                         if type(old) == "table" and type(val) == "table" then
                             -- Keep root table identity for addons holding a reference.
