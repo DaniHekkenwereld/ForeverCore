@@ -324,11 +324,19 @@ local function clearExtraSlotBindings(desired)
     return true
 end
 
-local function writeBindings(desired, clearExisting, saveMode, previousPreset, normalizeSlots)
+local function writeBindings(desired, clearExisting, saveMode, previousPreset, normalizeSlots, defaultBaseline)
     if locked() then return false, "in combat" end
     if type(SaveBindings) ~= "function" then return false, "SaveBindings unavailable" end
     local active = collect()
     if not active then return false, "GetBinding unavailable" end
+    if defaultBaseline then
+        -- The exported bindings-cache only lists explicit overrides. Start new
+        -- portable characters from Blizzard's full defaults (WASD, jump, etc.),
+        -- rather than reusing a damaged/incomplete character-specific cache.
+        if type(LoadBindings) ~= "function" then return false, "LoadBindings unavailable" end
+        local ok, loaded = pcall(LoadBindings, DEFAULT_BINDINGS or 0)
+        if not ok or loaded == false then return false, "loading Blizzard defaults failed" end
+    end
     if clearExisting then
         for _, pair in ipairs(active) do
             if not setKey(pair[1], nil) then return false, "clear " .. pair[1] end
@@ -345,8 +353,23 @@ local function writeBindings(desired, clearExisting, saveMode, previousPreset, n
     for _, pair in ipairs(desired) do
         if not setKey(pair[1], pair[2]) then return false, "bind " .. pair[1] end
     end
-    local ok, saved = pcall(SaveBindings, saveMode or 2)
+    local mode = saveMode or 2
+    local ok, saved = pcall(SaveBindings, mode)
     if not ok or saved == false then return false, "SaveBindings failed" end
+    if defaultBaseline then
+        -- Immediately load the just-saved character set. This catches the bug
+        -- where missing default bindings become visible on the first keypress.
+        local loadedOK, loaded = pcall(LoadBindings, mode)
+        if not loadedOK or loaded == false then
+            return false, "saved binding set could not be reloaded"
+        end
+        local requiredDefaults = {W = "MOVEFORWARD", S = "MOVEBACKWARD", SPACE = "JUMP"}
+        for key, action in pairs(requiredDefaults) do
+            if type(GetBindingAction) ~= "function" or GetBindingAction(key) ~= action then
+                return false, "default " .. key .. " missing after reload"
+            end
+        end
+    end
     return true
 end
 local function expectedStarterBindings()
@@ -370,8 +393,8 @@ local function expectedStarterBindings()
     return true
 end
 
-local function applyBindings(force)
-    local s = settings()
+local function applyBindings(force, resetToDefaults)
+    local s, db = settings()
     if not s or (not s.autoBindings and not force) then return end
     if locked() then pending = true; return end
     local guid = playerID()
@@ -475,10 +498,16 @@ local function applyBindings(force)
     if not s.backups[guid] then
         s.backups[guid] = {keys = current, mode = 2}
     end
-    -- The exported bindings-cache contains overrides only; untouched Blizzard
-    -- defaults are NOT listed. Never wipe the current bindings for a capture.
-    -- Apply only explicitly saved keys (and explicit NONE/unbind entries).
-    local ok, reason = writeBindings(target, false, 2, starter and s.applied[guid] or nil, starter)
+    -- A portable capture contains explicit overrides, not the complete
+    -- Blizzard defaults. Fresh bundled characters need a full default
+    -- baseline to protect W/A/S/D, space, camera controls and other keys.
+    -- Existing manually customized characters are never reset on login.
+    local freshPortable = captured and db and type(db.layoutTemplate) == "table"
+        and db.layoutTemplate.source == "bundled-source"
+        and s.applied[guid] == nil
+    local baseline = resetToDefaults or freshPortable
+    local ok, reason = writeBindings(target, false, 2,
+        starter and s.applied[guid] or nil, starter, baseline)
     running = false
     if ok then
         s.applied[guid] = revision
@@ -523,36 +552,33 @@ local function restore()
         say("Herstellen mislukt (" .. tostring(reason) .. ").")
     end
 end
--- Repair an account affected by older ForeverCore builds that cleared
--- every Blizzard default. Opt-in only: restores its pre-import keybind backup
--- (or WoW defaults if no backup exists), then overlays portable overrides.
+-- Opt-in rescue for characters damaged by previous import versions.
+-- Backup data can itself be incomplete; rebuild from native Blizzard defaults.
 local function repair()
     if locked() then say("Herstellen kan alleen buiten combat."); return end
-    local s = settings()
-    local guid = playerID()
-    if not s or not guid then say("Characterdata nog niet geladen."); return end
-    local backup = s.backups and s.backups[guid]
-    if backup and type(backup.keys) == "table" and #backup.keys >= 5 then
-        local ok, reason = writeBindings(backup.keys, true, 2)
-        if not ok then
-            say("Herstel vanaf oorspronkelijke backup mislukt: " .. tostring(reason))
-            return
-        end
-        say("Oorspronkelijke keybinds uit ForeverCore-backup hersteld.")
-    else
-        if type(LoadBindings) ~= "function" then
-            say("Geen backup en WoW LoadBindings niet beschikbaar; herstel defaults via het toetsenmenu.")
-            return
-        end
-        local ok, result = pcall(LoadBindings, DEFAULT_BINDINGS or 0)
-        if not ok or result == false then
-            say("WoW standaardbindings laden mislukt; herstel defaults via het toetsenmenu.")
-            return
-        end
-        say("Geen opgeslagen backup: WoW standaardbindings geladen.")
+    local s, db = settings()
+    if not s or not playerID() then say("Characterdata nog niet geladen."); return end
+    if not db.layoutTemplate or db.layoutTemplate.source ~= "bundled-source" then
+        say("Deze herstelactie is alleen voor portable testaccounts.")
+        return
     end
-    -- Force the captured profile back in without touching other default keys.
-    applyBindings(true)
+    say("Herstel: Blizzard-standaardbindings + portable toetsen, daarna opslagcontrole.")
+    applyBindings(true, true)
+end
+local function inspectBindings()
+    if type(GetBindingAction) ~= "function" then
+        say("GetBindingAction niet beschikbaar.")
+        return
+    end
+    local set = type(GetCurrentBindingSet) == "function"
+        and tostring(GetCurrentBindingSet()) or "onbekend"
+    local keys = {"W", "A", "S", "D", "SPACE", "-", "MOUSEWHEELDOWN", "G"}
+    local parts = {}
+    for _, key in ipairs(keys) do
+        local value = GetBindingAction(key)
+        parts[#parts + 1] = key .. "=" .. ((value and value ~= "") and value or "NOT BOUND")
+    end
+    say("Actieve binding set=" .. set .. "; " .. table.concat(parts, "; "))
 end
 local function status()
     local s, db = settings()
@@ -603,6 +629,7 @@ function FC:SetupCommand(raw)
     elseif command == "capture" then capture()
     elseif command == "apply" then applyBindings(true)
     elseif command == "repair" then repair()
+    elseif command == "inspect" then inspectBindings()
     elseif command == "restore" then restore()
     elseif command == "status" then status()
     elseif command == "bindings" and (option == "on" or option == "off") then
@@ -618,7 +645,7 @@ function FC:SetupCommand(raw)
         if option == "on" then applyCVars() end
         say("Automatische clientinstellingen: " .. option)
     else
-        say("/fc setup layout | capture | apply | repair | restore | status | bindings on/off | settings on/off | bars on/off")
+        say("/fc setup layout | capture | apply | repair | inspect | restore | status | bindings on/off | settings on/off | bars on/off")
     end
 end
 -- A new character's first keybind writes can be overwritten when Blizzard
