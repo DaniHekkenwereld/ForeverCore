@@ -244,7 +244,10 @@ local function selectEditLayout(name, forceSelect)
     if combat() or type(C_EditMode.SetActiveLayout) ~= "function" then return false end
     -- Force a native reselect after overwriting a stale OWN account layout.
     local ok, applied = pcall(C_EditMode.SetActiveLayout, index)
-    return ok and applied ~= false
+    if not ok or applied == false then return false end
+    -- A successful pcall alone does not mean the target layout was selected.
+    local current = editLayouts()
+    return current ~= nil and current.activeLayout == index
 end
 
 local function apply(force)
@@ -372,6 +375,16 @@ function FC:LayoutTemplateCommand(raw)
         end
         say("Dit character: " .. this .. " | Bartender geladen: " .. tostring(bt ~= nil)
             .. " | Edit Mode layout aanwezig: " .. tostring(findAccountLayout(t.editModeName) ~= nil) .. ".")
+        local live = editLayouts()
+        local presetCount = getPresetCount()
+        local activeIndex = live and live.activeLayout
+        local activeName = "onbekend"
+        if live and presetCount and type(activeIndex) == "number" then
+            local entry = live.layouts[activeIndex - presetCount]
+            activeName = entry and entry.layoutName or "Blizzard preset"
+        end
+        say("Edit Mode NU actief: " .. tostring(activeName)
+            .. " (index " .. tostring(activeIndex) .. ").")
         if FC.ExtraUIProfilesStatus then FC:ExtraUIProfilesStatus() end
         local bbfLoaded = false
         if C_AddOns and type(C_AddOns.IsAddOnLoaded) == "function" then
