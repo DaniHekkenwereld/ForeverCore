@@ -170,7 +170,7 @@ local function applyQuestie(profile)
     return true
 end
 
-local function applyDetails(profile)
+local function applyDetails(profile, force)
     if FC.EnsurePortableAddonProfile then FC:EnsurePortableAddonProfile("details") end
     local d = details()
     if not d then return false, "Details! nog niet gereed" end
@@ -178,7 +178,9 @@ local function applyDetails(profile)
     if not ok or type(snapshot) ~= "table" then return false, "Details!-snapshot ontbreekt" end
     local activeOK, active = pcall(d.GetCurrentProfileName, d)
     if not activeOK then return false, "Details!-profielnaam niet leesbaar" end
-    if active == profile then return true end
+    if active == profile and not force then return true end
+    -- Force still invokes ApplyProfile: the named profile might have been
+    -- reseeded from a newer portable export while remaining active.
     -- Standard Details! API saves the old active profile and reconstructs
     -- windows from the snapshot. It does not replace combat log data.
     local applied, result = pcall(d.ApplyProfile, d, profile)
@@ -204,7 +206,7 @@ function FC:ApplyExtraUIProfiles(force)
             if addon == "questie" then
                 success, reason = applyQuestie(info.profile)
             else
-                success, reason = applyDetails(info.profile)
+                success, reason = applyDetails(info.profile, force)
             end
             if success then
                 applied[addon] = t.revision
