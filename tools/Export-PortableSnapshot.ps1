@@ -1,7 +1,7 @@
 # Generate self-contained defaults that load on EVERY WoW account.
 # Offline export from last saved WTF data. The original game server does not
 # need to be available. Last saved state may predate the newest capture.
-param([string] $GameRoot, [string] $Account)
+param([string] $GameRoot, [string] $Account, [string] $BindingCharacter)
 $ErrorActionPreference = 'Stop'
 $addonRoot = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($GameRoot)) {
@@ -183,12 +183,16 @@ function Read-BindingCache([string] $path) {
 
 $sourceNameMatch = [regex]::Match($layout, '\["sourceName"\]\s*=\s*"([^"]+)"')
 $sourceCharacter = if ($sourceNameMatch.Success) { $sourceNameMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($BindingCharacter)) { $sourceCharacter = $BindingCharacter }
 $allBindingFiles = @(Get-ChildItem -LiteralPath $source.FullName -Filter 'bindings-cache.wtf' -Recurse -File -ErrorAction SilentlyContinue)
 $selectedBindings = $null
 if ($sourceCharacter) {
     $selectedBindings = $allBindingFiles | Where-Object {
         (Split-Path (Split-Path $_.FullName -Parent) -Leaf) -eq $sourceCharacter
     } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+}
+if (-not $selectedBindings -and -not [string]::IsNullOrWhiteSpace($BindingCharacter)) {
+    throw "Geen bindings-cache.wtf gevonden voor character '$BindingCharacter' in account $($source.Name)."
 }
 if (-not $selectedBindings) {
     $accountBindings = Join-Path $source.FullName 'bindings-cache.wtf'
