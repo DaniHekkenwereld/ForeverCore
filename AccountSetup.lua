@@ -268,6 +268,10 @@ local function classSpecific(command)
     return command:match("^SPELL ") or command:match("^MACRO ")
         or command:match("^ITEM ")
 end
+-- Beta-only Bug Reporter commands are not portable across accounts or to live.
+local function nonPortableCommand(command)
+    return type(command) == "string" and command:match("^FOREVERBUGREPORTER_") ~= nil
+end
 local function setKey(key, command)
     if type(SetBinding) ~= "function" then return false end
     -- WoW's bindings-cache uses NONE for an explicitly unbound key.
@@ -482,7 +486,8 @@ local function applyBindings(force, resetToDefaults)
         for _, pair in ipairs(profile.keys) do
             local key, command = pair[1], pair[2]
             if type(key) == "string" and type(command) == "string"
-                and (sameClass or not classSpecific(command)) then
+                and (sameClass or not classSpecific(command))
+                and not nonPortableCommand(command) then
                 target[#target + 1] = {key, command}
             end
         end
@@ -580,6 +585,51 @@ local function inspectBindings()
     end
     say("Actieve binding set=" .. set .. "; " .. table.concat(parts, "; "))
 end
+-- Read-only comparison of a captured profile against active client bindings.
+-- Invalid/disabled private-beta Bug Reporter commands are intentionally skipped.
+local function portableBindingDifferences(profile, currentClass)
+    if type(profile) ~= "table" or type(profile.keys) ~= "table"
+        or type(GetBindingAction) ~= "function" then return nil, 0, 0 end
+    local mismatches, checked, skipped = {}, 0, 0
+    local sameClass = profile.class == currentClass
+    for _, binding in ipairs(profile.keys) do
+        local key, action = binding[1], binding[2]
+        if type(key) == "string" and type(action) == "string" then
+            if nonPortableCommand(action) or (not sameClass and classSpecific(action)) then
+                skipped = skipped + 1
+            else
+                checked = checked + 1
+                local expected = action == "NONE" and "" or action
+                local ok, actual = pcall(GetBindingAction, key)
+                if type(actual) ~= "string" then actual = "" end
+                if not ok or actual ~= expected then
+                    mismatches[#mismatches + 1] = {key, expected, actual}
+                end
+            end
+        end
+    end
+    return mismatches, checked, skipped
+end
+
+local function diagnosticBindings()
+    local s = settings()
+    local profile = s and s.profile
+    local mismatches, checked, skipped = portableBindingDifferences(profile, classToken())
+    if not mismatches then
+        say("Geen portable keybindprofiel of binding-API beschikbaar.")
+        return
+    end
+    say("Portable keybindcontrole: " .. (#mismatches == 0 and "OK" or "AFWIJKING")
+        .. "; " .. checked .. " gecontroleerd, " .. skipped .. " overgeslagen, "
+        .. #mismatches .. " verschillend.")
+    for index = 1, math.min(#mismatches, 12) do
+        local pair = mismatches[index]
+        say(pair[1] .. ": verwacht " .. (pair[2] ~= "" and pair[2] or "NOT BOUND")
+            .. ", aanwezig " .. (pair[3] ~= "" and pair[3] or "NOT BOUND"))
+    end
+    if #mismatches > 12 then say("Nog " .. (#mismatches - 12) .. " verschillen niet getoond.") end
+end
+
 local function status()
     local s, db = settings()
     if not s then return end
@@ -630,6 +680,7 @@ function FC:SetupCommand(raw)
     elseif command == "apply" then applyBindings(true)
     elseif command == "repair" then repair()
     elseif command == "inspect" then inspectBindings()
+    elseif command == "diff" then diagnosticBindings()
     elseif command == "restore" then restore()
     elseif command == "status" then status()
     elseif command == "bindings" and (option == "on" or option == "off") then
@@ -645,28 +696,15 @@ function FC:SetupCommand(raw)
         if option == "on" then applyCVars() end
         say("Automatische clientinstellingen: " .. option)
     else
-        say("/fc setup layout | capture | apply | repair | inspect | restore | status | bindings on/off | settings on/off | bars on/off")
+        say("/fc setup layout | capture | apply | repair | inspect | diff | restore | status | bindings on/off | settings on/off | bars on/off")
     end
 end
 -- A new character's first keybind writes can be overwritten when Blizzard
 -- or Bartender finishes loading. Apply after world entry and verify again.
 -- Never re-import on old characters or silently override later user edits.
 local function capturedBindingsMatch(profile, currentClass)
-    if type(profile) ~= "table" or type(profile.keys) ~= "table"
-        or type(GetBindingAction) ~= "function" then return false end
-    local sameClass = profile.class == currentClass
-    for _, binding in ipairs(profile.keys) do
-        local key, action = binding[1], binding[2]
-        if type(key) == "string" and type(action) == "string"
-            and (sameClass or not classSpecific(action)) then
-            local ok, actual = pcall(GetBindingAction, key)
-            -- NONE in a bindings-cache represents an unbound key; the API
-            -- returns an empty string for that state.
-            if action == "NONE" then action = "" end
-            if not ok or actual ~= action then return false end
-        end
-    end
-    return true
+    local mismatches = portableBindingDifferences(profile, currentClass)
+    return mismatches ~= nil and #mismatches == 0
 end
 
 local function checkNewCharacterBindings(id, attempt)
