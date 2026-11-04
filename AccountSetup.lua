@@ -270,6 +270,9 @@ local function classSpecific(command)
 end
 local function setKey(key, command)
     if type(SetBinding) ~= "function" then return false end
+    -- WoW's bindings-cache uses NONE for an explicitly unbound key.
+    -- SetBinding expects nil (not the literal command "NONE") to unbind.
+    if command == "NONE" or command == "" then command = nil end
     local ok, result = pcall(SetBinding, key, command)
     return ok and result ~= nil and result ~= false
 end
@@ -472,9 +475,10 @@ local function applyBindings(force)
     if not s.backups[guid] then
         s.backups[guid] = {keys = current, mode = 2}
     end
-    -- A portable capture replaces Blizzard's default bindings even for
-    -- another class. Class-specific spell/macro bindings are omitted above.
-    local ok, reason = writeBindings(target, captured, 2, starter and s.applied[guid] or nil, starter)
+    -- The exported bindings-cache contains overrides only; untouched Blizzard
+    -- defaults are NOT listed. Never wipe the current bindings for a capture.
+    -- Apply only explicitly saved keys (and explicit NONE/unbind entries).
+    local ok, reason = writeBindings(target, false, 2, starter and s.applied[guid] or nil, starter)
     running = false
     if ok then
         s.applied[guid] = revision
@@ -518,6 +522,37 @@ local function restore()
     else
         say("Herstellen mislukt (" .. tostring(reason) .. ").")
     end
+end
+-- Repair an account affected by older ForeverCore builds that cleared
+-- every Blizzard default. Opt-in only: restores its pre-import keybind backup
+-- (or WoW defaults if no backup exists), then overlays portable overrides.
+local function repair()
+    if locked() then say("Herstellen kan alleen buiten combat."); return end
+    local s = settings()
+    local guid = playerID()
+    if not s or not guid then say("Characterdata nog niet geladen."); return end
+    local backup = s.backups and s.backups[guid]
+    if backup and type(backup.keys) == "table" and #backup.keys >= 5 then
+        local ok, reason = writeBindings(backup.keys, true, 2)
+        if not ok then
+            say("Herstel vanaf oorspronkelijke backup mislukt: " .. tostring(reason))
+            return
+        end
+        say("Oorspronkelijke keybinds uit ForeverCore-backup hersteld.")
+    else
+        if type(LoadBindings) ~= "function" then
+            say("Geen backup en WoW LoadBindings niet beschikbaar; herstel defaults via het toetsenmenu.")
+            return
+        end
+        local ok, result = pcall(LoadBindings, DEFAULT_BINDINGS or 0)
+        if not ok or result == false then
+            say("WoW standaardbindings laden mislukt; herstel defaults via het toetsenmenu.")
+            return
+        end
+        say("Geen opgeslagen backup: WoW standaardbindings geladen.")
+    end
+    -- Force the captured profile back in without touching other default keys.
+    applyBindings(true)
 end
 local function status()
     local s, db = settings()
@@ -567,6 +602,7 @@ function FC:SetupCommand(raw)
     if command == "layout" then printStarterLayout()
     elseif command == "capture" then capture()
     elseif command == "apply" then applyBindings(true)
+    elseif command == "repair" then repair()
     elseif command == "restore" then restore()
     elseif command == "status" then status()
     elseif command == "bindings" and (option == "on" or option == "off") then
@@ -582,7 +618,7 @@ function FC:SetupCommand(raw)
         if option == "on" then applyCVars() end
         say("Automatische clientinstellingen: " .. option)
     else
-        say("/fc setup layout | capture | apply | restore | status | bindings on/off | settings on/off | bars on/off")
+        say("/fc setup layout | capture | apply | repair | restore | status | bindings on/off | settings on/off | bars on/off")
     end
 end
 -- A new character's first keybind writes can be overwritten when Blizzard
@@ -597,6 +633,9 @@ local function capturedBindingsMatch(profile, currentClass)
         if type(key) == "string" and type(action) == "string"
             and (sameClass or not classSpecific(action)) then
             local ok, actual = pcall(GetBindingAction, key)
+            -- NONE in a bindings-cache represents an unbound key; the API
+            -- returns an empty string for that state.
+            if action == "NONE" then action = "" end
             if not ok or actual ~= action then return false end
         end
     end
