@@ -55,7 +55,7 @@ local function loaded(name)
     return false
 end
 
-local function apply()
+local function apply(onlyAddon, force)
     if busy or inCombat() then pending = true; return end
     local data = bundle()
     local root, state = account()
@@ -65,11 +65,11 @@ local function apply()
     busy = true
     local changed, unloaded = 0, 0
     for addon, vars in pairs(data.addons) do
-        if type(vars) == "table" then
+        if (not onlyAddon or addon == onlyAddon) and type(vars) == "table" then
             if loaded(addon) then
                 for name, value in pairs(vars) do
                     local key = addon .. "/" .. name
-                    if type(name) == "string" and state.installed[key] ~= data.version
+                    if type(name) == "string" and (force or state.installed[key] ~= data.version)
                        and (type(value) == "table" or type(value) == "string"
                          or type(value) == "boolean" or type(value) == "number") then
                         local val = clone(value)
@@ -139,7 +139,47 @@ function FC:PortableAddonsStatus()
     end
     say("Extra profielen: " .. addons .. " addons (" .. on .. " geladen), "
         .. applied .. "/" .. variables .. " variabelen geïmporteerd.")
+    local bb = data.addons.BetterBlizzFrames
+    local target = type(bb) == "table" and bb.BetterBlizzFramesDB
+    local actual = _G.BetterBlizzFramesDB
+    if type(target) ~= "table" then
+        say("BetterBlizzFrames: geen configuratie in snapshot.")
+    elseif not loaded("BetterBlizzFrames") then
+        say("BetterBlizzFrames: NIET geladen; schakel de addon in bij characterselectie.")
+    elseif type(actual) ~= "table" then
+        say("BetterBlizzFrames: wel geladen, maar BetterBlizzFramesDB niet beschikbaar.")
+    else
+        local compared, mismatches = 0, 0
+        for key, expected in pairs(target) do
+            if type(expected) ~= "table" then
+                compared = compared + 1
+                if actual[key] ~= expected then mismatches = mismatches + 1 end
+            end
+        end
+        local imported = state and state.installed["BetterBlizzFrames/BetterBlizzFramesDB"] == data.version
+        say("BetterBlizzFrames: " .. (imported and "import gemarkeerd" or "nog niet geïmporteerd")
+            .. ", eenvoudige opties afwijkend: " .. mismatches .. "/" .. compared .. ".")
+    end
     say("Zie PortableAddonSettings-report.txt voor niet-ondersteunde addons.")
+end
+
+function FC:PortableAddonCommand(raw)
+    local cmd = tostring(raw or "status"):lower()
+    if cmd == "repair" then
+        local data = bundle()
+        local root = FC.GetDatabase and FC:GetDatabase()
+        if not data or not data.addons.BetterBlizzFrames then
+            say("BetterBlizzFrames ontbreekt in de portable export.")
+        elseif not root or not root.layoutTemplate or root.layoutTemplate.source ~= "bundled-source" then
+            say("Repair alleen op nieuwe portable accounts, niet op het bronaccount.")
+        elseif not loaded("BetterBlizzFrames") then
+            say("BetterBlizzFrames is niet geladen. Schakel deze addon eerst in.")
+        else
+            apply("BetterBlizzFrames", true)
+        end
+    else
+        self:PortableAddonsStatus()
+    end
 end
 
 events:RegisterEvent("ADDON_LOADED")
