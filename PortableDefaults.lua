@@ -125,16 +125,25 @@ end
 
 -- Questie and Details! use different profile stores; seed only their captured
 -- named UI profiles. Quest progress, character data and combat history stay local.
-function FC:EnsurePortableAddonProfile(which)
+function FC:EnsurePortableAddonProfile(which, refresh)
     local data = bundle()
     if not data then return false end
+    if refresh then
+        local root = self.GetDatabase and self:GetDatabase()
+        if not root or not root.layoutTemplate
+            or root.layoutTemplate.source ~= "bundled-source" then
+            return false -- never overwrite profiles on the original/source account
+        end
+    end
     if which == "questie" and type(data.questie) == "table" then
         local q = _G.Questie
         local sv = q and q.db and q.db.sv
         local name = data.questie.profileName
         if type(sv) ~= "table" or type(name) ~= "string" then return false end
         sv.profiles = sv.profiles or {}
-        if not sv.profiles[name] then sv.profiles[name] = clone(data.questie.profile) end
+        if refresh or not sv.profiles[name] then
+            sv.profiles[name] = clone(data.questie.profile)
+        end
         return type(sv.profiles[name]) == "table"
     elseif which == "details" and type(data.details) == "table" then
         local d = _G.Details
@@ -143,7 +152,9 @@ function FC:EnsurePortableAddonProfile(which)
         if type(d) ~= "table" or type(sv) ~= "table"
             or type(name) ~= "string" then return false end
         sv.__profiles = sv.__profiles or {}
-        if not sv.__profiles[name] then sv.__profiles[name] = clone(data.details.profile) end
+        if refresh or not sv.__profiles[name] then
+            sv.__profiles[name] = clone(data.details.profile)
+        end
         return type(sv.__profiles[name]) == "table"
     end
     return false
@@ -152,7 +163,7 @@ end
 -- Install the portable Edit Mode account layout once. Blizzard owns these
 -- layouts; this is a guarded, single-account creation via its native API.
 -- It is never called during combat and never changes secure frames directly.
-function FC:EnsurePortableEditLayout(name)
+function FC:EnsurePortableEditLayout(name, refresh)
     local root = self.GetDatabase and self:GetDatabase()
     local t = root and root.layoutTemplate
     if not t or type(t.layoutData) ~= "table" then return false end
@@ -164,17 +175,23 @@ function FC:EnsurePortableEditLayout(name)
         local ok, info = pcall(C_EditMode.GetLayouts)
         if not ok or type(info) ~= "table" or type(info.layouts) ~= "table" then return nil, nil end
         local account = Enum and Enum.EditModeLayoutType and Enum.EditModeLayoutType.Account or 1
-        for _, item in ipairs(info.layouts) do
-            if item.layoutName == name and item.layoutType == account then return true, info end
+        for index, item in ipairs(info.layouts) do
+            if item.layoutName == name and item.layoutType == account then
+                return true, info, index
+            end
         end
-        return false, info
+        return false, info, nil
     end
 
-    local exists, info = found()
+    local exists, info, index = found()
     if exists == nil then return false end
-    if exists then return true end
-    if t.portableEditModeAttempted then return false end
-    -- Avoid repeated protected API writes on a client that rejects creation.
+    if exists and not refresh then return true end
+    if refresh and t.source ~= "bundled-source" then
+        say("Edit Mode vernieuwen kan alleen op een portable testaccount.")
+        return false
+    end
+    if t.portableEditModeAttempted and not refresh then return false end
+    -- Avoid repeated protected API writes when creation was rejected.
     t.portableEditModeAttempted = true
 
     local account = Enum and Enum.EditModeLayoutType and Enum.EditModeLayoutType.Account or 1
@@ -182,17 +199,25 @@ function FC:EnsurePortableEditLayout(name)
     layout.layoutType = account
     layout.layoutName = name
 
-    -- Do not delete or overwrite existing account HUD layouts.
-    table.insert(info.layouts, layout)
+    if exists then
+        -- Explicit /fc layout apply: replace ONLY this matching account
+        -- layout (OWN) with the complete bundled systems and anchors.
+        -- Other named user layouts stay untouched.
+        info.layouts[index] = layout
+    else
+        table.insert(info.layouts, layout)
+    end
     local ok, reason = pcall(C_EditMode.SaveLayouts, info)
-    if not ok then
+    if not ok or reason == false then
         say("Portable Edit Mode kon niet worden opgeslagen: " .. tostring(reason)
             .. ". Bartender blijft wel automatisch werken.")
         return false
     end
     local verified = found()
     if verified then
-        say("Portable Edit Mode-layout '" .. name .. "' beschikbaar op dit WoW-account.")
+        say("Portable Edit Mode-layout '" .. name .. "' "
+            .. (exists and refresh and "vernieuwd" or "beschikbaar")
+            .. " op dit WoW-account.")
         return true
     end
     say("Portable Edit Mode kon niet worden bevestigd. Bartender blijft wel werken.")
