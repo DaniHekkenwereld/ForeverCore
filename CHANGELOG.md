@@ -1,3 +1,11 @@
+## 0.3.36-beta — Diagnose incomplete keybind verification without resetting good keys
+
+- The imported portable binding cache contains an F7 action for `FOREVERBUGREPORTER_CAPTURE`. Forever Bug Reporter is a private-beta addon and may be disabled or absent on live; do not import or require its binding on target characters.
+- A read-only `/fc setup diff` now reports every remaining keybind mismatch (up to 12), comparing expected/actual actions without modifying saved bindings. Explicitly unbound `NONE` keys are normalized to an empty action.
+- A read-only `/fc addons diff` now reports the exact BetterBlizzFrames option(s) that differ from the bundled source, instead of guessing which one caused the 1/609 mismatch.
+- Future source exports exclude beta-only Forever Bug Reporter bindings; the currently committed snapshot need not be regenerated for this runtime fix.
+- The beta client must still be tested: all 13/13 account variables imported and 1/609 BetterBlizzFrames scalar options differed in the reported screenshot.
+
 ## 0.3.35-beta — Fix exported addon settings not loading (Lua syntax error)
 
 - Fixed the exporter's regex replacement for the EnhanceQoL swingtimer options. The original replacement accidentally emitted invalid Lua literals `1true` and removed their option keys, causing the entire `PortableAddonSettings.lua` to fail loading (and thus no BetterBlizzFrames/EnhanceQoL/Plater preferences to import).
