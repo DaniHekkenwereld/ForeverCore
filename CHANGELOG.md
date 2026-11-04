@@ -1,3 +1,12 @@
+## 0.3.33-beta — Explicit OWN Edit Mode capture and BetterBlizzFrames diagnostics
+
+- Added `/fc layout capture OWN` to capture the actual named source Edit Mode layout instead of silently falling back to a different layout such as Dien.
+- Preserves exact captured Edit Mode layout data, including positions; the portable importer also refreshes a previously imported account when the new snapshot changes its layout name or revision.
+- `/fc addons status` reports whether BetterBlizzFrames is loaded, whether the bundled settings are marked as imported, and scalar option differences.
+- Added opt-in `/fc addons repair` on portable test accounts to re-import bundled BetterBlizzFrames settings and reload once, without resetting unrelated addon profiles.
+- IMPORTANT: bundled `PortableSnapshot.lua` currently still contains the old `Dien` layout. Select/save `OWN` on the real source character, run `/fc layout capture OWN`, log out, regenerate the portable snapshot and push it to GitHub before testing `OWN` on other accounts.
+- Runtime testing on WoW Forever remains necessary.
+
 ## 0.3.32-beta — Restore complete defaults and verify saved character bindings
 
 - Addresses the follow-up where initial WASD/default keys appear correct but disappear after the next input: on first portable import, load a complete Blizzard default keymap before overlaying the 75 saved source overrides.
