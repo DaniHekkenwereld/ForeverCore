@@ -235,29 +235,34 @@ local function capture(requestedName)
     say("Abilities en spells worden niet gekopieerd of verwijderd; dat blijft per character.")
 end
 
-local function selectEditLayout(name)
+local function selectEditLayout(name, forceSelect)
     if not name then return false end
     local index = findAccountLayout(name)
     if not index then return false end
     local info = editLayouts()
-    if info and info.activeLayout == index then return true end
+    if info and info.activeLayout == index and not forceSelect then return true end
     if combat() or type(C_EditMode.SetActiveLayout) ~= "function" then return false end
-    local ok = pcall(C_EditMode.SetActiveLayout, index)
-    return ok
+    -- Force a native reselect after overwriting a stale OWN account layout.
+    local ok, applied = pcall(C_EditMode.SetActiveLayout, index)
+    return ok and applied ~= false
 end
 
 local function apply(force)
     if busy or combat() then queued = true; return end
-    -- A missing Blizzard Edit Mode layout must not block Bartender4.
-    -- Edit Mode account layouts often do not travel with a copied WTF folder
-    -- because they are associated with another game account.
-    if force and FC.ApplyExtraUIProfiles then FC:ApplyExtraUIProfiles(true) end
-    -- The packaged snapshot is the default even when this WoW account has
-    -- never seen the source private-server character.
+    -- Refresh cached snapshot metadata before applying any UI profile.
     if FC.EnsurePortableDefaults then FC:EnsurePortableDefaults() end
     local id = guid()
     local t = db()
     if not id or not t or not t.profileName or not t.editModeName then return end
+    if force and t.source == "bundled-source"
+        and FC.EnsurePortableAddonProfile then
+        -- Existing named snapshot profiles may belong to an earlier export.
+        -- Explicit /fc layout apply refreshes those copies; normal login never
+        -- overwrites someone else's customized addon profile.
+        FC:EnsurePortableAddonProfile("questie", true)
+        FC:EnsurePortableAddonProfile("details", true)
+    end
+    if force and FC.ApplyExtraUIProfiles then FC:ApplyExtraUIProfiles(true) end
     if not force and (id == t.source or (t.existing and t.existing[id])) then return end
     if not force and t.applied and t.applied[id] == t.revision then return end
 
@@ -299,12 +304,14 @@ local function apply(force)
     end
 
     if not state.editMode or force then
-        if not findAccountLayout(t.editModeName) and FC.EnsurePortableEditLayout then
-            if force then t.portableEditModeAttempted = nil end
+        local refreshed = false
+        if force and t.source == "bundled-source" and FC.EnsurePortableEditLayout then
+            refreshed = FC:EnsurePortableEditLayout(t.editModeName, true) == true
+        elseif not findAccountLayout(t.editModeName) and FC.EnsurePortableEditLayout then
             FC:EnsurePortableEditLayout(t.editModeName)
         end
         if findAccountLayout(t.editModeName) then
-            if selectEditLayout(t.editModeName) then
+            if selectEditLayout(t.editModeName, refreshed) then
                 state.editMode = true
                 say("Edit Mode-layout '" .. t.editModeName .. "' geselecteerd.")
             end
@@ -352,9 +359,17 @@ function FC:LayoutTemplateCommand(raw)
             .. " | Edit Mode toegepast: " .. ((state and state.editMode) and "ja" or "nee") .. ".")
         say("Portable instellingen in addon: "
             .. ((FC.HasPortableDefaults and FC:HasPortableDefaults()) and "aan" or "NIET AANWEZIG") .. ".")
+        local bundled = _G.ForeverCoreBundledDefaults
+        local bundledLayout = type(bundled) == "table" and bundled.layout
+        local expectedName = type(bundledLayout) == "table" and bundledLayout.editModeName
         say("Bron: " .. tostring(t.sourceName) .. ", rev " .. tostring(t.revision)
             .. " | Bartender: " .. tostring(t.profileName)
-            .. " | Edit Mode: " .. tostring(t.editModeName) .. ".")
+            .. " | Edit Mode: " .. tostring(t.editModeName)
+            .. " | Gebundeld: " .. tostring(expectedName or "ontbreekt") .. ".")
+        if expectedName and t.editModeName ~= expectedName then
+            say("WAARSCHUWING: oud Edit Mode-profiel in SavedVariables. "
+                .. "Installeer de laatste ForeverCore en voer /fc layout apply uit.")
+        end
         say("Dit character: " .. this .. " | Bartender geladen: " .. tostring(bt ~= nil)
             .. " | Edit Mode layout aanwezig: " .. tostring(findAccountLayout(t.editModeName) ~= nil) .. ".")
         if FC.ExtraUIProfilesStatus then FC:ExtraUIProfilesStatus() end
