@@ -1,3 +1,10 @@
+## 0.3.31-beta — Preserve and repair Blizzard default keybinds
+
+- Fixed an important import bug: the source `bindings-cache.wtf` lists only explicitly saved bindings, but ForeverCore cleared all of Blizzard's existing defaults before applying it. New imports now overlay exported keys without deleting untouched defaults.
+- Treat explicit `NONE` entries as unbind operations instead of an invalid binding command.
+- Added `/fc setup repair` for test characters affected by older versions. It restores the pre-import ForeverCore backup (or Blizzard defaults if no backup exists) and then reapplies the portable profile without erasing unrelated defaults.
+- This is an opt-in repair; existing characters are not forcibly reset on login. In-game verification is still needed.
+
 ## 0.3.30-beta — Complete keybind, camera, status-text, player-highlight and swing timer transfer
 
 - Fixed a real Lua binding capture bug: `GetBinding()` returns were packed in a sparse table, which could silently drop keys. Capture key1 and key2 explicitly.
