@@ -138,9 +138,9 @@ local function handle(line)
         say("/fc setup [capture|status|apply|restore|bindings|settings]")
         say("/fc plates auto/on/off | /fc mode tank/fury/arms | /fc alerts on/off | /fc taunt on/off")
         say("/fc chat status | /fc chat setup   (Party + Whispers tabs)")
-        say("/fc bartender status | /fc bartender apply | /fc layout capture/status/apply")
+        say("/fc bartender status | /fc bartender apply | /fc layout capture OWN | status | apply")
         say("/fc party status (raid-style + class colors; via opgeslagen Edit Mode layout)")
-        say("/fc addons status (controleer overige portable addoninstellingen)")
+        say("/fc addons status | repair (BetterBlizzFrames-instellingen opnieuw importeren)")
         say("/fc record [status|summary|on|off|native on|native off] | /fc mark <notitie>")
     elseif arg == "record" or arg == "combatlog" or arg == "mark" then
         if FC.RecorderCommand then FC:RecorderCommand(line) else say("Recorder-module ontbreekt.") end
@@ -165,12 +165,14 @@ local function handle(line)
         say("Warrior-profiel: " .. val .. " (handmatig; geen automatische talentscan).")
     elseif arg == "layout" then
         if FC.LayoutTemplateCommand then
-            FC:LayoutTemplateCommand(val)
+            -- Forward all arguments: /fc layout capture OWN needs the name.
+            FC:LayoutTemplateCommand(line:match("^%s*%S+%s*(.-)%s*$") or "")
         else
             say("LayoutTemplate.lua is niet geladen.")
         end
     elseif arg == "addons" then
-        if FC.PortableAddonsStatus then FC:PortableAddonsStatus()
+        if FC.PortableAddonCommand then FC:PortableAddonCommand(val or "status")
+        elseif FC.PortableAddonsStatus then FC:PortableAddonsStatus()
         else say("PortableAddonSetup.lua is niet geladen.") end
     elseif arg == "party" then
         if FC.PartyFramesCommand then
