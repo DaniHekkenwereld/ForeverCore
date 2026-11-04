@@ -152,7 +152,7 @@ foreach ($folder in (Get-ChildItem -LiteralPath $addonsPath -Directory | Sort-Ob
             $literal = [regex]::Replace(
                 $literal,
                 '(\["swingBar(?:MainHand|OffHand)Enabled"\]\s*=\s*)false',
-                '1true'
+                '${1}true'
             )
         }
         if ($literal.Length -gt 8000000) {
