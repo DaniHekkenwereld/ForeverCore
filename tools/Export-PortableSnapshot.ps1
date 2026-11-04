@@ -205,6 +205,13 @@ if (-not $selectedBindings -and $allBindingFiles.Count -eq 1) {
 }
 if ($selectedBindings) {
     $foundBindings = Read-BindingCache $selectedBindings.FullName
+    # The private beta's Bug Reporter does not exist on live or when disabled.
+    # Its bindings must not become mandatory in a portable profile.
+    foreach ($key in @($foundBindings.Keys)) {
+        if ($foundBindings[$key] -match '^FOREVERBUGREPORTER_') {
+            $foundBindings.Remove($key)
+        }
+    }
     if ($foundBindings.Count -ge 5) {
         $entries = [System.Collections.Generic.List[string]]::new()
         foreach ($key in ($foundBindings.Keys | Sort-Object)) {
