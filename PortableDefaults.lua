@@ -72,6 +72,26 @@ function FC:EnsurePortableDefaults()
         end
         t.addons = next(addons) and addons or nil
         root.layoutTemplate = t
+    elseif root.layoutTemplate.source == "bundled-source"
+        and type(data.layout) == "table" then
+        -- Re-exported snapshots must update old test accounts too. Previously
+        -- the first imported "Dien" layout was cached forever, even after
+        -- the source was recaptured as a different layout (e.g. "OWN").
+        local t = root.layoutTemplate
+        local newName = data.layout.editModeName or "FC Dien Layout"
+        local newRevision = tonumber(data.layout.revision) or 1
+        if t.editModeName ~= newName or tonumber(t.revision) ~= newRevision then
+            t.editModeName = newName
+            t.layoutData = clone(data.layout.layoutData)
+            t.screenWidth = data.layout.screenWidth
+            t.screenHeight = data.layout.screenHeight
+            t.sourceName = data.layout.sourceName or t.sourceName
+            t.revision = newRevision
+            t.applied, t.appliedParts = {}, {}
+            t.portableEditModeAttempted = nil
+            say("Nieuwe portable Edit Mode-layout geladen: " .. tostring(newName)
+                .. " (rev " .. tostring(newRevision) .. ").")
+        end
     end
 
     if type(data.bindingProfile) == "table" then
