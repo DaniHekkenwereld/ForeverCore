@@ -1,3 +1,11 @@
+## 0.3.35-beta — Fix exported addon settings not loading (Lua syntax error)
+
+- Fixed the exporter's regex replacement for the EnhanceQoL swingtimer options. The original replacement accidentally emitted invalid Lua literals `1true` and removed their option keys, causing the entire `PortableAddonSettings.lua` to fail loading (and thus no BetterBlizzFrames/EnhanceQoL/Plater preferences to import).
+- Repaired and committed the bundled `PortableAddonSettings.lua`, with both `swingBarMainHandEnabled = true` and `swingBarOffHandEnabled = true`. The repaired content has been Lua syntax-checked offline.
+- Corrected the missing-settings warning: a missing Lua global can mean the generated file did not load or has syntax errors, not necessarily that export was not run.
+- Questie still shows `niet vastgelegd` because the current `PortableSnapshot.lua` does not include a Questie profile; this is a separate export/capture issue.
+- Details! currently has two saved instances in the source snapshot; profile application alone does not guarantee it will show exactly one window on a fresh character.
+
 ## 0.3.34-beta — Force refresh stale OWN layout and previously imported UI profiles
 
 - Root cause of misleading success: existing account-specific Edit Mode, Details! and Questie profiles were cached under the same names and kept their old contents even after bundled Lua snapshot files changed.
