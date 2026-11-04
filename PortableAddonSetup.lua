@@ -122,7 +122,7 @@ end
 function FC:PortableAddonsStatus()
     local data = bundle()
     if not data then
-        say("Aanvullende addons: geen PortableAddonSettings.lua gegenereerd.")
+        say("Aanvullende addons niet geladen: controleer PortableAddonSettings.lua in ForeverCore en Lua-syntaxfouten.")
         return
     end
     local _, state = account()
