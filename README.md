@@ -4,7 +4,7 @@ A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever 
 
 > **Beta prototype:** The addon has not yet been validated in the live WoW Forever beta client. API behavior, TOC version and macro conditions may change. No combat automation is provided.
 
-## Included in v0.3.28-beta
+## Included in v0.3.30-beta
 
 - **Always-visible action bars in Bartender:** enable Bartender bars 1/3/4/5/6 using Bartender's own API, show empty slots and disable fade/hide. ForeverCore no longer calls Blizzard's `SetActionBarToggles` API. Original starter spell slots are never rewritten.
 - Attempt to enable default friendly nameplates automatically in raid instances (`/fc plates auto`). This depends on Blizzard restrictions and client CVar support.
@@ -52,6 +52,16 @@ A **new** character automatically selects the saved Questie AceDB profile and ca
 - If the new character was made with an earlier addon version, `/fc setup apply` can manually retry its normal keybind preset.
 - BetterBlizzFrames is a different addon with **account-wide SavedVariables** (`BetterBlizzFramesDB`), not a separate per-character UI profile to capture. It must be enabled and loaded on the character. `/fc layout status` now reports its real load state; when it is not loaded, check the WoW character-selection AddOns menu and choose **All Characters** for BetterBlizzFrames. `/bbf` opens its options when enabled.
 - No changes to existing spell/action slots or Bartender's captured profile.
+
+## Complete portable controls from old source account (v0.3.30)
+
+A portable snapshot includes the source character's **native WoW keybinds** from `WTF/Account/<account>/<realm>/<character>/bindings-cache.wtf` when present, falling back to the account binding cache. It also exports camera zoom from local WTF configuration plus the requested client options for **status text = BOTH**, player circle + outline and max zoom. The script prints the binding file and count; if no source cache was found, it prints an explicit warning and falls back to an existing ForeverCore capture. User's source class is Warrior; spell/macro/item-specific keybinds cannot be mapped directly to a Rogue, but normal bars, camera and Bartender CLICK binds are carried across.
+
+**Swing timer:** the user's 2026-11-04 uploaded EnhanceQoL configuration had `swingBarMainHandEnabled = false` and `swingBarOffHandEnabled = false`. ForeverCore enables both in the portable profile for new accounts. The in-game timer itself appears during eligible automatic weapon swings when EnhanceQoL supports the current client.
+
+Because these controls were added after the earlier export, run `Export-PortableSnapshot.ps1` again while logged out of the game, then copy **both newly generated** .lua files to the target `Interface/AddOns/ForeverCore`. Do not replace these two generated files with the empty GitHub placeholders. The change reimports the v3 addon settings once; open an already-created test character and use `/fc setup apply` to force its keybinds, then `/fc setup status` for diagnostics. Automatic new-character verification is also included.
+
+This revision was reviewed in repository but **has not yet been tested inside the WoW Forever client**; the server need not be online to generate the files.
 
 ## Additional installed addon settings (v0.3.28, partial coverage)
 
