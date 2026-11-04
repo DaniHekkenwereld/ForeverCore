@@ -1,3 +1,13 @@
+## 0.3.34-beta — Force refresh stale OWN layout and previously imported UI profiles
+
+- Root cause of misleading success: existing account-specific Edit Mode, Details! and Questie profiles were cached under the same names and kept their old contents even after bundled Lua snapshot files changed.
+- On portable test accounts only, explicit `/fc layout apply` now replaces the *matching* named account Edit Mode layout with the complete bundled data, reselects it and checks that the expected layout is active.
+- Explicit re-import refreshes the named Details! and Questie profile snapshots on portable test accounts; ordinary login and the original source account are not overwritten.
+- Fixes Details! profile API behaviour when applying a freshly re-imported profile with the same active name: pass the native no-save argument to avoid overwriting the new snapshot with the stale UI.
+- `/fc layout status` now reports the bundled, cached and currently active Edit Mode names, to distinguish an old local install or SavedVariables from an actual successful import.
+- BetterBlizzFrames still has a separate opt-in `/fc addons repair`, with detailed `/fc addons status` diagnostics. No guarantee of a perfect match without testing inside the Forever client.
+- Source snapshot remains `OWN`, revision 3, 2560x1440. Character-specific spells/actions and quest progress are intentionally not copied.
+
 ## 0.3.33-beta — Explicit OWN Edit Mode capture and BetterBlizzFrames diagnostics
 
 - Added `/fc layout capture OWN` to capture the actual named source Edit Mode layout instead of silently falling back to a different layout such as Dien.
