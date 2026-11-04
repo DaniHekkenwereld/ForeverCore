@@ -163,9 +163,37 @@ function FC:PortableAddonsStatus()
     say("Zie PortableAddonSettings-report.txt voor niet-ondersteunde addons.")
 end
 
+local function compareBetterBlizzFrames()
+    local data = bundle()
+    local expected = data and data.addons.BetterBlizzFrames
+        and data.addons.BetterBlizzFrames.BetterBlizzFramesDB
+    local actual = _G.BetterBlizzFramesDB
+    if type(expected) ~= "table" or type(actual) ~= "table" then
+        say("BetterBlizzFrames: geen geladen bron- en doelinstellingen om te vergelijken.")
+        return
+    end
+    local keys, checked = {}, 0
+    for key, wanted in pairs(expected) do
+        if type(wanted) ~= "table" then
+            checked = checked + 1
+            if actual[key] ~= wanted then keys[#keys + 1] = key end
+        end
+    end
+    table.sort(keys, function(a,b) return tostring(a) < tostring(b) end)
+    say("BetterBlizzFrames-verschillen: " .. #keys .. " van " .. checked .. " eenvoudige instellingen.")
+    for i = 1, math.min(#keys, 12) do
+        local key = keys[i]
+        say(tostring(key) .. ": bron=" .. tostring(expected[key])
+            .. "; huidig=" .. tostring(actual[key]))
+    end
+    if #keys > 12 then say("Nog " .. (#keys - 12) .. " verschillen niet getoond.") end
+end
+
 function FC:PortableAddonCommand(raw)
     local cmd = tostring(raw or "status"):lower()
-    if cmd == "repair" then
+    if cmd == "diff" then
+        compareBetterBlizzFrames()
+    elseif cmd == "repair" then
         local data = bundle()
         local root = FC.GetDatabase and FC:GetDatabase()
         if not data or not data.addons.BetterBlizzFrames then
