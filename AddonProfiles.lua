@@ -183,7 +183,11 @@ local function applyDetails(profile, force)
     -- reseeded from a newer portable export while remaining active.
     -- Standard Details! API saves the old active profile and reconstructs
     -- windows from the snapshot. It does not replace combat log data.
-    local applied, result = pcall(d.ApplyProfile, d, profile)
+    -- Details! normally saves the current profile before switching.
+    -- If it is the same name we just replaced from a portable snapshot,
+    -- SaveProfile() would overwrite the fresh snapshot with the stale UI.
+    -- Explicit refresh must use bNoSave=true.
+    local applied, result = pcall(d.ApplyProfile, d, profile, force == true)
     if not applied or result == false then return false, tostring(result) end
     local verifyOK, current = pcall(d.GetCurrentProfileName, d)
     if not verifyOK or current ~= profile then return false, "Details!-profielwissel niet bevestigd" end
