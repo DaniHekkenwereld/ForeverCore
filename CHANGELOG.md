@@ -1,3 +1,11 @@
+## 0.3.32-beta — Restore complete defaults and verify saved character bindings
+
+- Addresses the follow-up where initial WASD/default keys appear correct but disappear after the next input: on first portable import, load a complete Blizzard default keymap before overlaying the 75 saved source overrides.
+- Immediately reload the saved character-specific keybinding set after saving, verifying W, S and Space remain bound instead of reporting a false success.
+- `/fc setup repair` now rebuilds from native defaults even when the earlier ForeverCore backup was incomplete; this changes bindings only when explicitly requested.
+- Added read-only `/fc setup inspect` to print active binding set and actual W/A/S/D/Space/zoom bindings before and after any reproduction.
+- Requires live testing on the Forever client. Do not reset keys automatically on existing characters.
+
 ## 0.3.31-beta — Preserve and repair Blizzard default keybinds
 
 - Fixed an important import bug: the source `bindings-cache.wtf` lists only explicitly saved bindings, but ForeverCore cleared all of Blizzard's existing defaults before applying it. New imports now overlay exported keys without deleting untouched defaults.
