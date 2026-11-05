@@ -1,8 +1,8 @@
 ## Interface: 16001
 ## Title: ForeverCore
-## Notes: WoW Forever beta - Warrior tools and passive gameplay recorder
+## Notes: WoW Forever - Warrior tools and passive gameplay recorder
 ## Author: Community prototype
-## Version: 0.3.38-beta
+## Version: 1.0
 ## OptionalDeps: Bartender4, Questie, Details
 ## SavedVariables: ForeverCoreDB
 Core.lua
