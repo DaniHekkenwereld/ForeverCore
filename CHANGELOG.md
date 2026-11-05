@@ -1,3 +1,9 @@
+## 1.0 — Version milestone
+
+- Version label changed to **1.0** for the current ForeverCore build.
+- The keybinding installer remains completely disabled; no automatic binding changes are made on login or when creating a character.
+- Existing UI profile features remain unchanged. This is a version update, not a claim of complete live-client verification.
+
 ## 0.3.38-beta — Hard removal of keybinding installer from addon startup
 
 - **Emergency live fix:** Removed `AccountSetup.lua` from the actual `ForeverCore_Camelot.toc` loading list. Its event handlers are no longer registered, so creating a character, login, and delayed retries cannot run its old keybinding import.
