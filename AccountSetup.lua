@@ -4,6 +4,10 @@
 -- Binding writes and secure CVars are only attempted out of combat.
 local FC = _G.ForeverCore
 if not FC then return end
+-- Emergency safety lock: 0.3.33 keybind import can destroy basic movement
+-- bindings on live. No automatic or manual binding writes are permitted until
+-- a complete profile exporter and a non-destructive installer are verified.
+local KEYBIND_WRITE_LOCKED = true
 
 local f = CreateFrame("Frame")
 local prefix = "|cff80c9ffForeverCore|r "
@@ -147,7 +151,9 @@ local function settings()
     if type(db.accountSetup) ~= "table" then db.accountSetup = {} end
     local s = db.accountSetup
     if s.autoCVars == nil then s.autoCVars = true end
-    if s.autoBindings == nil then s.autoBindings = true end
+    -- Override persisted 'on' from older versions. Account keybind import is
+    -- disabled globally until the faulty WoW-live behavior is fixed.
+    s.autoBindings = false
     -- Keep the old, unsafe repeating actionbar automation disabled.
     -- New characters use a separate one-time, per-GUID setup instead.
     s.autoActionBars = false
@@ -329,6 +335,7 @@ local function clearExtraSlotBindings(desired)
 end
 
 local function writeBindings(desired, clearExisting, saveMode, previousPreset, normalizeSlots, defaultBaseline)
+    if KEYBIND_WRITE_LOCKED then return false, "keybind-import tijdelijk uitgeschakeld wegens live bug" end
     if locked() then return false, "in combat" end
     if type(SaveBindings) ~= "function" then return false, "SaveBindings unavailable" end
     local active = collect()
@@ -398,6 +405,11 @@ local function expectedStarterBindings()
 end
 
 local function applyBindings(force, resetToDefaults)
+    -- Even explicit /fc setup apply or /fc setup repair must be harmless.
+    if KEYBIND_WRITE_LOCKED then
+        if force then say("Veiligheidsblokkade: keybind-import uitgeschakeld. Gebruik WoW Keybindings of een WTF-backup.") end
+        return
+    end
     local s, db = settings()
     if not s or (not s.autoBindings and not force) then return end
     if locked() then pending = true; return end
@@ -684,8 +696,8 @@ function FC:SetupCommand(raw)
     elseif command == "restore" then restore()
     elseif command == "status" then status()
     elseif command == "bindings" and (option == "on" or option == "off") then
-        local s = settings(); if s then s.autoBindings = option == "on" end
-        say("Automatische keybind-sync: " .. option)
+        local s = settings(); if s then s.autoBindings = false end
+        say("Automatische keybind-sync uitgeschakeld wegens fout op live. 'on' is geblokkeerd.")
     elseif command == "bars" and (option == "on" or option == "off") then
         local s = settings()
         if s then s.autoActionBars = false end
