@@ -1,3 +1,5 @@
+> **BELANGRIJK — versie 0.3.38-beta en hoger:** De automatische keybind-installatie is volledig verwijderd. De module `AccountSetup.lua` wordt niet geladen. Alle oude aanwijzingen hieronder voor `/fc setup apply`, `repair`, `restore` of automatische binding-import zijn verouderd: deze commando's wijzigen geen toetsen meer. Alleen `/fc setup inspect` leest je huidige keybinds uit. Verwijder vóór het installeren de oude ForeverCore-map, pak de nieuwste versie uit en controleer in de in-game AddOns-lijst de versie. Reeds gewiste keybinds worden niet automatisch teruggezet.
+
 # ForeverCore
 
 A small, experimental Warrior-focused UI addon for **World of Warcraft: Forever (beta)**. Built for Protection/Fury/Arms Warriors and intended to keep common raid preparation checks in one place.
