@@ -1,3 +1,12 @@
+## 0.3.38-beta — Hard removal of keybinding installer from addon startup
+
+- **Emergency live fix:** Removed `AccountSetup.lua` from the actual `ForeverCore_Camelot.toc` loading list. Its event handlers are no longer registered, so creating a character, login, and delayed retries cannot run its old keybinding import.
+- Replaced `AccountSetup.lua` with a short inert read-only stub for defense in depth; it has no events, no `SetBinding`, `SaveBindings` or `LoadBindings` invocations.
+- `/fc setup inspect` (and `status`) is read-only and implemented directly in `Core.lua`. All other `/fc setup` commands simply report that importing is disabled.
+- Bartender, Edit Mode (`OWN`), BetterBlizzFrames and the other portable settings modules are still loaded as before.
+- **Important:** Updating addon files does not restore bindings already erased by previous versions. Restore them separately from the WoW keybindings menu or a known-good character binding cache from a `WTF` backup.
+- Always close WoW and overwrite the **entire** addon folder (remove the old ForeverCore folder first) to avoid stale Lua files or TOC entries. Confirm the in-game addon version is `0.3.38-beta` on the AddOns screen.
+
 ## 0.3.37-beta — Emergency: all keybinding writes disabled
 
 - **CRITICAL**: Disabled all automatic and manual WoW binding writes after `/fc setup apply` erased movement keys on live.
