@@ -1,3 +1,11 @@
+## 0.3.37-beta — Emergency: all keybinding writes disabled
+
+- **CRITICAL**: Disabled all automatic and manual WoW binding writes after `/fc setup apply` erased movement keys on live.
+- Even if old SavedVariables enabled automatic imports, the addon now forces binding synchronization off.
+- `/fc setup apply`, `/fc setup repair`, `/fc setup restore`, and `/fc setup bindings on` cannot modify keybindings. Read-only diagnostics remain available.
+- Recover movement using the game's Keybindings menu, or `/run SetBinding("W","MOVEFORWARD"); SetBinding("A","STRAFELEFT"); SetBinding("S","MOVEBACKWARD"); SetBinding("D","STRAFERIGHT"); SetBinding("SPACE","JUMP"); SaveBindings(2)`.
+- A complete custom profile may be recoverable from a backed-up `WTF` character binding cache. Full verified export/import must precede any future re-enablement.
+
 ## 0.3.36-beta — Diagnose incomplete keybind verification without resetting good keys
 
 - The imported portable binding cache contains an F7 action for `FOREVERBUGREPORTER_CAPTURE`. Forever Bug Reporter is a private-beta addon and may be disabled or absent on live; do not import or require its binding on target characters.
