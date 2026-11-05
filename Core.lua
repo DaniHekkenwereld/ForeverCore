@@ -135,7 +135,7 @@ local function handle(line)
     local arg, val = line:lower():match("^%s*(%S*)%s*(%S*)")
     if arg == "" or arg == "help" then
         say("/fc macros | /fc openers [prot/fury/arms] | /fc mode tank/fury/arms")
-        say("/fc setup [capture|status|apply|restore|bindings|settings]")
+        say("/fc setup inspect (alleen lezen; keybind-import permanent uitgeschakeld)")
         say("/fc plates auto/on/off | /fc mode tank/fury/arms | /fc alerts on/off | /fc taunt on/off")
         say("/fc chat status | /fc chat setup   (Party + Whispers tabs)")
         say("/fc bartender status | /fc bartender apply | /fc layout capture OWN | status | apply")
@@ -145,10 +145,24 @@ local function handle(line)
     elseif arg == "record" or arg == "combatlog" or arg == "mark" then
         if FC.RecorderCommand then FC:RecorderCommand(line) else say("Recorder-module ontbreekt.") end
     elseif arg == "setup" then
-        if FC.SetupCommand then
-            FC:SetupCommand(line:match("^%s*%S+%s*(.-)%s*$") or "")
+        -- The entire old AccountSetup module is NOT loaded anymore.
+        -- Only read-only inspection is allowed; never modify bindings.
+        if val == "inspect" or val == "status" then
+            if type(GetBindingAction) ~= "function" then
+                say("Keybind-API niet beschikbaar.")
+            else
+                local which = type(GetCurrentBindingSet) == "function"
+                    and tostring(GetCurrentBindingSet()) or "onbekend"
+                local checks = {}
+                for _, key in ipairs({"W", "A", "S", "D", "SPACE", "-", "MOUSEWHEELDOWN", "G"}) do
+                    local action = GetBindingAction(key)
+                    checks[#checks + 1] = key .. "="
+                        .. ((type(action) == "string" and action ~= "") and action or "NOT BOUND")
+                end
+                say("Keybind-import UIT; actieve set=" .. which .. "; " .. table.concat(checks, "; "))
+            end
         else
-            say("AccountSetup.lua is niet geladen.")
+            say("Keybind-import UITGESCHAKELD op live en beta. Er zijn geen toetsen gewijzigd.")
         end
     elseif arg == "macros" then
         installMacros()
